@@ -72,6 +72,39 @@ function openLearningStream(path, listener) {
 
 /** @typedef {import('../types.js').Services} Services */
 
+
+/**
+ * Faculty workspace endpoints are not published on the HTTP API yet. Rather than
+ * pretend, every method rejects with one sentence that says so — a screen then
+ * shows its error state instead of a blank panel. Subscription methods throw
+ * synchronously because their contract is synchronous.
+ */
+function facultyError() {
+  const error = new Error('The faculty workspace is mock-only in this build. Set VITE_USE_MOCK=true, or publish the faculty endpoints.')
+  error.name = 'ServiceError'
+  Object.assign(error, { code: 'faculty_api_unavailable', status: 501, retryable: false })
+  return error
+}
+
+const facultyMethodNames = [
+  'getDashboard', 'listBankQuestions', 'getBankQuestion', 'createBankQuestion', 'updateBankQuestion',
+  'deleteBankQuestion', 'listBankFacets', 'listSubtopics', 'listExamPatterns', 'listExams', 'getExam',
+  'createExam', 'saveExam', 'addQuestionToExam', 'removeQuestionFromExam', 'setExamStatus',
+  'getExamPreview', 'deleteExam', 'getMonitor', 'getItemAnalysis', 'markQuestionFaulty',
+  'restoreQuestion', 'listClasses', 'createClass', 'cancelClass', 'getHostConsole', 'startSession',
+  'endSession', 'triggerAttentionCheck', 'setParticipantMuted', 'hideChatMessage',
+  'approveQueueQuestion', 'listRecordings', 'getRecording', 'createRecording', 'saveRecording',
+  'deleteRecording', 'getAttendanceReport', 'exportAttendance', 'listDoubts', 'getDoubt',
+  'replyDoubt', 'resolveDoubt', 'listReplyTemplates',
+]
+
+/** @type {Record<string, unknown>} */
+const facultyApi = Object.fromEntries(
+  facultyMethodNames.map((name) => [name, () => Promise.reject(facultyError())]),
+)
+facultyApi.subscribeMonitor = () => { throw facultyError() }
+facultyApi.subscribeHost = () => { throw facultyError() }
+
 /** @type {Services} */
 export const apiServices = {
   auth: {
@@ -284,6 +317,8 @@ export const apiServices = {
     leaveStudyRoom(roomId, studentId) { return request(`/study-rooms/${encodeURIComponent(roomId)}/leave`, { method: 'POST', body: { studentId }, schema: studyRoomDetailSchema }) },
     subscribeRoom(roomId, studentId, listener) { return openLearningStream(`/study-rooms/${encodeURIComponent(roomId)}/events?studentId=${encodeURIComponent(studentId)}`, listener) },
   },
+
+  faculty: /** @type {unknown} */ (facultyApi),
 
   live: {
     listUpcoming() {

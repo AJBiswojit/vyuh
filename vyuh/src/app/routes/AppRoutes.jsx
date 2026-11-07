@@ -24,9 +24,20 @@ const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPassword
 const JoinInvitePage = lazy(() => import('@/features/auth/pages/JoinInvitePage.jsx').then((m) => ({ default: m.JoinInvitePage })))
 const AccessDeniedPage = lazy(() => import('@/features/system/pages/AccessDeniedPage.jsx').then((m) => ({ default: m.AccessDeniedPage })))
 const StudentHomePage = lazy(() => import('@/features/dashboard/pages/StudentHomePage.jsx').then((m) => ({ default: m.StudentHomePage })))
-const FacultyHomePage = lazy(() => import('@/features/dashboard/pages/FacultyHomePage.jsx').then((m) => ({ default: m.FacultyHomePage })))
+const FacultyDashboardPage = lazy(() => import('@/features/faculty/pages/FacultyDashboardPage.jsx').then((m) => ({ default: m.FacultyDashboardPage })))
 const FacultyBankPage = lazy(() => import('@/features/faculty/pages/FacultyBankPage.jsx').then((m) => ({ default: m.FacultyBankPage })))
-const FacultyEvaluationPage = lazy(() => import('@/features/faculty/pages/FacultyEvaluationPage.jsx').then((m) => ({ default: m.FacultyEvaluationPage })))
+const FacultyQuestionEditorPage = lazy(() => import('@/features/faculty/pages/FacultyQuestionEditorPage.jsx').then((m) => ({ default: m.FacultyQuestionEditorPage })))
+const FacultyExamsPage = lazy(() => import('@/features/faculty/pages/FacultyExamsPage.jsx').then((m) => ({ default: m.FacultyExamsPage })))
+const FacultyExamBuilderPage = lazy(() => import('@/features/faculty/pages/FacultyExamBuilderPage.jsx').then((m) => ({ default: m.FacultyExamBuilderPage })))
+const FacultyExamMonitorPage = lazy(() => import('@/features/faculty/pages/FacultyExamMonitorPage.jsx').then((m) => ({ default: m.FacultyExamMonitorPage })))
+const FacultyAnalysisPage = lazy(() => import('@/features/faculty/pages/FacultyAnalysisPage.jsx').then((m) => ({ default: m.FacultyAnalysisPage })))
+const FacultyClassesPage = lazy(() => import('@/features/faculty/pages/FacultyClassesPage.jsx').then((m) => ({ default: m.FacultyClassesPage })))
+const FacultyHostPage = lazy(() => import('@/features/faculty/pages/FacultyHostPage.jsx').then((m) => ({ default: m.FacultyHostPage })))
+const FacultyRecordingsPage = lazy(() => import('@/features/faculty/pages/FacultyRecordingsPage.jsx').then((m) => ({ default: m.FacultyRecordingsPage })))
+const FacultyRecordingEditorPage = lazy(() => import('@/features/faculty/pages/FacultyRecordingEditorPage.jsx').then((m) => ({ default: m.FacultyRecordingEditorPage })))
+const FacultyAttendancePage = lazy(() => import('@/features/faculty/pages/FacultyAttendancePage.jsx').then((m) => ({ default: m.FacultyAttendancePage })))
+const FacultyDoubtsPage = lazy(() => import('@/features/faculty/pages/FacultyDoubtsPage.jsx').then((m) => ({ default: m.FacultyDoubtsPage })))
+const FacultyDoubtThreadPage = lazy(() => import('@/features/faculty/pages/FacultyDoubtThreadPage.jsx').then((m) => ({ default: m.FacultyDoubtThreadPage })))
 const AdminFeesPage = lazy(() => import('@/features/admin/pages/AdminFeesPage.jsx').then((m) => ({ default: m.AdminFeesPage })))
 const AdminBatchesPage = lazy(() => import('@/features/batches/pages/AdminBatchesPage.jsx').then((m) => ({ default: m.AdminBatchesPage })))
 const StudentBatchPage = lazy(() => import('@/features/batches/pages/StudentBatchPage.jsx').then((m) => ({ default: m.StudentBatchPage })))
@@ -142,10 +153,22 @@ export function AppRoutes() {
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allow={['faculty']} />}>
             <Route path="/faculty" element={<FacultyLayout />}>
-              <Route index element={<FacultyHomePage />} />
-              <Route path="/faculty/account" element={<AccountPage />} />
+              <Route index element={<FacultyDashboardPage />} />
               <Route path="/faculty/bank" element={<FacultyBankPage />} />
-              <Route path="/faculty/evaluation" element={<FacultyEvaluationPage />} />
+              <Route path="/faculty/bank/new" element={<FacultyQuestionEditorPage />} />
+              <Route path="/faculty/bank/:questionId" element={<FacultyQuestionEditorPage />} />
+              <Route path="/faculty/exams" element={<FacultyExamsPage />} />
+              <Route path="/faculty/exams/:examId" element={<FacultyExamBuilderPage />} />
+              <Route path="/faculty/exams/:examId/monitor" element={<FacultyExamMonitorPage />} />
+              <Route path="/faculty/analysis" element={<FacultyAnalysisPage />} />
+              <Route path="/faculty/classes" element={<FacultyClassesPage />} />
+              <Route path="/faculty/classes/:sessionId/host" element={<FacultyHostPage />} />
+              <Route path="/faculty/recordings" element={<FacultyRecordingsPage />} />
+              <Route path="/faculty/recordings/:recordingId" element={<FacultyRecordingEditorPage />} />
+              <Route path="/faculty/attendance" element={<FacultyAttendancePage />} />
+              <Route path="/faculty/doubts" element={<FacultyDoubtsPage />} />
+              <Route path="/faculty/doubts/:doubtId" element={<FacultyDoubtThreadPage />} />
+              <Route path="/faculty/account" element={<AccountPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>
           </Route>

@@ -17,7 +17,7 @@ export { doubts } from './doubts.js'
 export { studyRooms, roomVisitors } from './studyRooms.js'
 export { chatScripts, seedChat, seedQuestions } from './liveSessions.js'
 export { recordingPlaybackSeeds } from './recordings.js'
-export { createEventEmitter, createMockClassChannel, createMockRoomChannel, randomBetween } from './realtime.js'
+export { createEventEmitter, createMockClassChannel, createMockRoomChannel, createMockTicker, randomBetween } from './realtime.js'
 export { liveSessions, studyLog } from './sessions.js'
 export { courses } from './courses.js'
 export { announcements, resumeItem } from './dashboard.js'
@@ -27,3 +27,19 @@ export { simulate, clone, errorsEnabled, errorRate, readFlag } from './latency.j
 export { questions, buildQuestionBank, authoredSections, configuredQuestionCount, NEET_PRACTICE_EXAM_ID, DEFAULT_QUESTION_COUNT } from './questions.js'
 
 export { analysisFixture, analysisFixtureMeta, perQuestionAnalysis, cohortDistribution, timeStatistics, mistakeCategories, releasePolicy, attemptTrend, buildAnalysisFromSubmission, buildTopicRevision } from './analysis.js'
+
+/* ── Phase 7: faculty workspace ────────────────────────────────────────── */
+export {
+  questionBank, bankTopics, bankSubjects, subtopicsFor, topicById, topicsForSubject,
+  questionKindLabels, difficultyLabels, bloomLabels, sourceLabels, difficultyOrder,
+} from './questionBank.js'
+export { examPatterns, facultyExams, examById, patternById, FACULTY_ID, FACULTY_NAME } from './facultyExams.js'
+export { monitorRoster, monitorScript, seedMonitorStudents, monitorStatusLabels } from './monitorEvents.js'
+export {
+  ITEM_ANALYSIS_EXAM_ID, ITEM_ANALYSIS_MARKS, ITEM_ANALYSIS_NEGATIVE, analysedQuestionIds,
+  analysisCohort, analysisResponses, itemPoints, reteachPlans, cohortItemAccuracy, itemReliability,
+} from './itemAnalysis.js'
+export {
+  facultyProfile, facultyClasses, hostParticipants, facultyRecordings, replyTemplates,
+  facultyDoubts, attendanceRows, attendancePeriod, cohortSnapshot, facultyDashboard,
+} from './facultyWorkspace.js'

@@ -23,17 +23,28 @@ study rooms — lives here as plain objects that satisfy the JSDoc contracts in
    events (chat, attention checks, faculty approval, room presence ticks) are the
    one exception, and they run on `realtime.js`'s injectable channel clock — never
    a raw service timer — so tests can drive them with fake timers.
-6. **Everything is exported through `index.js`.** That barrel is the single point
+6. **The faculty workspace is additive, not seeded.** Phase 7 fixtures describe the
+   starting state; what a faculty member authors is written by
+   `services/mock/faculty.js` into `localStorage` under
+   `vyuh.mock.faculty.<facultyId>.v1`. A confirmed fault is also mirrored to
+   `vyuh.mock.faults.<examId>` so the (separate) analysis service can apply the
+   same policy to a student's result sheet. Clearing storage restores the
+   fixtures, and nothing in this folder reads either key.
+7. **Everything is exported through `index.js`.** That barrel is the single point
    a service touches, which is what makes step 3 of the removal recipe a one-line
    change.
-7. **Shared analysis arithmetic is pure.** `analysis.js` may use
+8. **Shared analysis arithmetic is pure.** `analysis.js` may use
    `shared/lib/analysisMath.js` for filter/what-if math so the mock builder and
    the UI apply the same rules; it never imports React or a service.
-8. **Shared learning arithmetic is pure, too.** Attendance coverage, presence
+9. **Shared learning arithmetic is pure, too.** Attendance coverage, presence
    scoring, transcript highlighting and quiz grading live in
    `shared/lib/learningMath.js`; the learning service and the player apply the
    same rules. `realtime.js` holds only the emitter and channel factories — its
    clock, RNG and timers are injected, so it never imports React or a service.
+10. **Faculty arithmetic is pure as well.** Palette preview, paper totals, monitor
+    counts, the faulty policy, weak topics, KR-20 reliability, chapter validation
+    and CSV assembly live in `shared/lib/facultyMath.js`, so the service and the
+    screens apply one set of rules.
 
 ## The institute we model
 
@@ -66,6 +77,11 @@ study rooms — lives here as plain objects that satisfy the JSDoc contracts in
 | `recordings.js` | `RecordingDetail`, `PlaybackState` | chapters, timed transcript, end quizzes, playback seeds |
 | `doubts.js` | `DoubtThreadDetail`, `DoubtMessage` | seed threads with timestamp links |
 | `studyRooms.js` | `StudyRoomDetail`, `StudyParticipant` | rooms, participants, room visitors |
+| `questionBank.js` | `BankQuestion`, `BankOption` | faculty bank ledger, preview, picker; 92 items across four subjects |
+| `facultyExams.js` | `FacultyExam`, `ExamPattern` | faculty builder, paper ledger, palette preview; five lifecycle papers and five presets |
+| `monitorEvents.js` | `MonitorStudent`, `MonitorEvent` | live monitor wall, event feed, host chat and question queue |
+| `itemAnalysis.js` | `ItemPoint`, `ScoreImpactRow` | item analysis scatter, flagged items, KR-20 reliability, faulty-score register |
+| `facultyWorkspace.js` | `FacultyDashboard`, `FacultyClass`, `FacultyRecording`, `FacultyDoubt`, `AttendanceRow`, `ReplyTemplate` | faculty dashboard, scheduler, host console, recording editor, register, doubt inbox |
 | `realtime.js` | — | event emitter + injectable class/room channels (clock, RNG, timers) |
 | `index.js` | — | barrel; the only import target for services |
 

@@ -68,4 +68,40 @@ export const queryKeys = {
   studyRoomList(studentId) { return ['learning', 'study-rooms', studentId] },
   /** @param {string} roomId @param {string} studentId */
   studyRoom(roomId, studentId) { return ['learning', 'study-rooms', roomId, studentId] },
+
+  /* Phase 7 — faculty workspace. One namespace, then the domain. */
+  faculty: {
+    /** @param {string} facultyId */
+    dashboard(facultyId) { return ['faculty', facultyId, 'dashboard'] },
+    /** @param {string} facultyId @param {object} query */
+    bank(facultyId, query) { return ['faculty', facultyId, 'bank', query] },
+    /** @param {string} facultyId @param {string} questionId */
+    question(facultyId, questionId) { return ['faculty', facultyId, 'bank', questionId] },
+    /** @param {string} facultyId */
+    exams(facultyId) { return ['faculty', facultyId, 'exams'] },
+    /** @param {string} facultyId @param {string} examId */
+    exam(facultyId, examId) { return ['faculty', facultyId, 'exams', examId] },
+    /** @param {string} facultyId @param {string} examId */
+    examPreview(facultyId, examId) { return ['faculty', facultyId, 'exams', examId, 'preview'] },
+    /** @param {string} facultyId @param {string} examId */
+    monitor(facultyId, examId) { return ['faculty', facultyId, 'exams', examId, 'monitor'] },
+    /** @param {string} facultyId @param {string} examId */
+    itemAnalysis(facultyId, examId) { return ['faculty', facultyId, 'analysis', examId] },
+    /** @param {string} facultyId */
+    classes(facultyId) { return ['faculty', facultyId, 'classes'] },
+    /** @param {string} facultyId @param {string} sessionId */
+    hostConsole(facultyId, sessionId) { return ['faculty', facultyId, 'classes', sessionId, 'host'] },
+    /** @param {string} facultyId */
+    facultyRecordings(facultyId) { return ['faculty', facultyId, 'recordings'] },
+    /** @param {string} facultyId @param {string} recordingId */
+    facultyRecording(facultyId, recordingId) { return ['faculty', facultyId, 'recordings', recordingId] },
+    /** @param {string} facultyId @param {object} filter */
+    facultyAttendance(facultyId, filter) { return ['faculty', facultyId, 'attendance', filter] },
+    /** @param {string} facultyId @param {string} status */
+    facultyDoubts(facultyId, status) { return ['faculty', facultyId, 'doubts', status] },
+    /** @param {string} facultyId @param {string} doubtId */
+    facultyDoubt(facultyId, doubtId) { return ['faculty', facultyId, 'doubts', doubtId] },
+    /** @param {string} facultyId */
+    replyTemplates(facultyId) { return ['faculty', facultyId, 'reply-templates'] },
+  },
 }

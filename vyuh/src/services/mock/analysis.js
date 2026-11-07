@@ -4,6 +4,7 @@ import {
   currentStudent, exams, NEET_PRACTICE_EXAM_ID, releasePolicy, simulate, users,
 } from '../../mock-data/index.js'
 import { readPersistedSession } from '../../shared/lib/sessionPersistence.js'
+import { applyFaultsToResultSheet } from '../../shared/lib/facultyMath.js'
 import { readStoredSubmissions } from './examFlow.js'
 import { notFound, serviceError } from './errors.js'
 
@@ -12,6 +13,7 @@ import { notFound, serviceError } from './errors.js'
 /** @typedef {import('../../contracts/analysis.js').ReleasePolicy} ReleasePolicy */
 
 const LOCK_KEY = 'vyuh.mock.analysisLocked'
+const FAULTS_PREFIX = 'vyuh.mock.faults.'
 const RELEASE_IN_KEY = 'vyuh.mock.analysisReleaseInSeconds'
 const OFFSET_KEY = 'vyuh.mock.analysisOffsetMs'
 
@@ -23,6 +25,23 @@ function readNumber(key, fallback, min, max) {
     return Number.isFinite(value) ? Math.max(min, Math.min(max, value)) : fallback
   } catch { return fallback }
 }
+/**
+ * Faults marked by faculty on this paper. The faculty service mirrors its
+ * register here because the two mocks are separate modules; a real API would
+ * return the corrected score from the server.
+ * @param {string} examId
+ * @returns {string[]}
+ */
+function facultyFaults(examId) {
+  try {
+    const raw = localStorage.getItem(`${FAULTS_PREFIX}${examId}`)
+    const parsed = raw ? JSON.parse(raw) : []
+    return Array.isArray(parsed) ? parsed.filter((id) => typeof id === 'string') : []
+  } catch {
+    return []
+  }
+}
+
 function locked() {
   try { return localStorage.getItem(LOCK_KEY) === 'true' } catch { return false }
 }
@@ -56,7 +75,8 @@ export const analysisService = {
       const stored = attemptId ? submissions.find((entry) => entry.input.attemptId === attemptId) : submissions.sort((a, b) => Date.parse(b.input.submittedAt) - Date.parse(a.input.submittedAt))[0]
       if (attemptId && attemptId !== analysisFixtureMeta.attemptId && !stored) throw notFound('attempt')
       const release = releaseState()
-      const details = release.released ? stored ? buildAnalysisFromSubmission(stored.input) : analysisFixture : null
+      const baseDetails = release.released ? (stored ? buildAnalysisFromSubmission(stored.input) : analysisFixture) : null
+      const details = baseDetails ? applyFaultsToResultSheet(baseDetails, facultyFaults(examId)) : null
       return /** @type {ExamAnalysis} */ ({
         examId, examTitle: exam.title, attemptId: stored?.input.attemptId ?? analysisFixtureMeta.attemptId,
         studentId, candidateName: person.name, rollNumber: person.rollNumber,

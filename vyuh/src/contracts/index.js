@@ -51,6 +51,47 @@
  * @typedef {import('./learning.js').DoubtThreadDetail} DoubtThreadDetail
  * @typedef {import('./learning.js').StudyRoomDetail} StudyRoomDetail
  * @typedef {import('./learning.js').LearningEvent} LearningEvent
+ *
+ * Faculty workspace (Phase 7). Attendance is aliased because the student module
+ * already publishes a report under that name.
+ * @typedef {import('./faculty.js').QuestionKind} QuestionKind
+ * @typedef {import('./faculty.js').BankOption} BankOption
+ * @typedef {import('./faculty.js').BankQuestion} BankQuestion
+ * @typedef {import('./faculty.js').BankQuery} BankQuery
+ * @typedef {import('./faculty.js').BankFacets} BankFacets
+ * @typedef {import('./faculty.js').BankPage} BankPage
+ * @typedef {import('./faculty.js').QuestionInput} QuestionInput
+ * @typedef {import('./faculty.js').ExamPatternId} ExamPatternId
+ * @typedef {import('./faculty.js').ExamPattern} ExamPattern
+ * @typedef {import('./faculty.js').FacultyExamStatus} FacultyExamStatus
+ * @typedef {import('./faculty.js').ExamSectionDraft} ExamSectionDraft
+ * @typedef {import('./faculty.js').ExamIntegrity} ExamIntegrity
+ * @typedef {import('./faculty.js').FacultyExam} FacultyExam
+ * @typedef {import('./faculty.js').PaletteCell} PaletteCell
+ * @typedef {import('./faculty.js').ExamPreview} ExamPreview
+ * @typedef {import('./faculty.js').MonitorStudentStatus} MonitorStudentStatus
+ * @typedef {import('./faculty.js').MonitorStudent} MonitorStudent
+ * @typedef {import('./faculty.js').MonitorEvent} MonitorEvent
+ * @typedef {import('./faculty.js').MonitorSnapshot} MonitorSnapshot
+ * @typedef {import('./faculty.js').ItemPoint} ItemPoint
+ * @typedef {import('./faculty.js').WeakTopic} WeakTopic
+ * @typedef {import('./faculty.js').ScoreImpactRow} ScoreImpactRow
+ * @typedef {import('./faculty.js').ItemAnalysis} ItemAnalysis
+ * @typedef {import('./faculty.js').FacultyClass} FacultyClass
+ * @typedef {import('./faculty.js').ClassInput} ClassInput
+ * @typedef {import('./faculty.js').HostParticipant} HostParticipant
+ * @typedef {import('./faculty.js').HostEvent} HostEvent
+ * @typedef {import('./faculty.js').HostConsole} HostConsole
+ * @typedef {import('./faculty.js').RecordingChapterDraft} RecordingChapterDraft
+ * @typedef {import('./faculty.js').FacultyRecording} FacultyRecording
+ * @typedef {import('./faculty.js').RecordingInput} RecordingInput
+ * @typedef {import('./faculty.js').AttendanceRow} AttendanceRow
+ * @typedef {import('./faculty.js').AttendanceExport} AttendanceExport
+ * @typedef {import('./faculty.js').AttendanceReport} FacultyAttendanceReport
+ * @typedef {import('./faculty.js').FacultyDoubtMessage} FacultyDoubtMessage
+ * @typedef {import('./faculty.js').FacultyDoubt} FacultyDoubt
+ * @typedef {import('./faculty.js').ReplyTemplate} ReplyTemplate
+ * @typedef {import('./faculty.js').FacultyDashboard} FacultyDashboard
  */
 
 export {};
