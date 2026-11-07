@@ -1,0 +1,107 @@
+<!doctype html>
+<html lang="en" class="h-full">
+  <head>
+    <meta charset="UTF-8" />
+    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+    <meta
+      name="description"
+      content="Vyuh is the exam-preparation and live-learning platform for NTA, JEE and NEET institutes."
+    />
+    <meta name="theme-color" content="#0B0D10" />
+
+    <!--
+      Typefaces are declared here, not imported from a package, so the stack the
+      design system specifies is visible in one place. Files are self-hosted from
+      /fonts (variable woff2, latin subset) — no third-party origin, no FOUT.
+      Fraunces      display: headings, large numerals, scores
+      Bricolage     UI and body
+      JetBrains Mono timer, marks, scores, roll numbers
+    -->
+    <link rel="preload" href="/fonts/fraunces-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/bricolage-grotesque-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <link rel="preload" href="/fonts/jetbrains-mono-latin-wght-normal.woff2" as="font" type="font/woff2" crossorigin />
+    <style>
+      @font-face {
+        font-family: 'Fraunces';
+        src: url('/fonts/fraunces-latin-wght-normal.woff2') format('woff2-variations');
+        font-weight: 100 900;
+        font-style: normal;
+        /*
+          `swap`, and this is deliberate. `block` paints the page ~0.1s sooner on
+          a throttled phone but risks an invisible headline for up to three
+          seconds on a bad connection — and school Wi-Fi is the assumed network.
+          Swap is safe here because 'Fraunces Fallback' below is metric-matched to
+          this face: the substitution keeps the same line boxes, so measured CLS
+          stays at 0.0000 even with the font delayed 1200ms.
+        */
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'Bricolage Grotesque';
+        src: url('/fonts/bricolage-grotesque-latin-wght-normal.woff2') format('woff2-variations');
+        font-weight: 200 800;
+        font-style: normal;
+        font-display: swap;
+      }
+      @font-face {
+        font-family: 'JetBrains Mono';
+        src: url('/fonts/jetbrains-mono-latin-wght-normal.woff2') format('woff2-variations');
+        font-weight: 100 800;
+        font-style: normal;
+        font-display: swap;
+      }
+
+      /*
+        Measured fallbacks. `font-display: swap` alone still moves the page when a
+        webfont arrives: the fallback's glyphs are a different width and sit on a
+        different baseline, so every line box resizes at once. These faces make the
+        system fallback occupy the same space before the real font loads, which is
+        what removes the shift rather than just delaying it.
+
+        The numbers are measured, not guessed:
+          • average advance width over U+0020–U+007E, read from the woff2 binaries
+            with fontTools (Fraunces 0.6106 em, Bricolage 0.5566, JetBrains 0.6000);
+          • the same measurement taken in Chromium for each fallback stack below.
+        size-adjust is the ratio of the two; ascent/descent overrides are the web
+        font's own hhea metrics divided by that ratio.
+      */
+
+      /* Fraunces 0.6106 / Georgia 0.5368 → 113.75% · hhea 97.8 / 25.5 */
+      @font-face {
+        font-family: 'Fraunces Fallback';
+        src: local('Georgia'), local('Times New Roman'), local('Liberation Serif'), local('DejaVu Serif');
+        size-adjust: 113.75%;
+        ascent-override: 85.98%;
+        descent-override: 22.42%;
+        line-gap-override: 0%;
+      }
+
+      /* Bricolage 0.5566 / Arial 0.5275 → 105.56% · hhea 93 / 27 */
+      @font-face {
+        font-family: 'Bricolage Fallback';
+        src: local('Arial'), local('Helvetica Neue'), local('Liberation Sans'), local('DejaVu Sans');
+        size-adjust: 105.56%;
+        ascent-override: 88.10%;
+        descent-override: 25.58%;
+        line-gap-override: 0%;
+      }
+
+      /* JetBrains 0.6000 / Courier New 0.6001 → 100% · hhea 102 / 30 */
+      @font-face {
+        font-family: 'JetBrains Mono Fallback';
+        src: local('Courier New'), local('Liberation Mono'), local('DejaVu Sans Mono');
+        size-adjust: 100%;
+        ascent-override: 102%;
+        descent-override: 30%;
+        line-gap-override: 0%;
+      }
+    </style>
+
+    <title>Vyuh — Exam preparation, precisely</title>
+  </head>
+  <body class="h-full">
+    <div id="root" class="h-full"></div>
+    <script type="module" src="/src/main.jsx"></script>
+  </body>
+</html>

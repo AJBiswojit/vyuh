@@ -1,0 +1,328 @@
+/*
+ * ─────────────────────────────────────────────────────────────────────────────
+ * Vyuh design tokens. The single file in the app allowed to contain hex values.
+ * ─────────────────────────────────────────────────────────────────────────────
+ *
+ * THREE COLOUR SUPREMACY
+ *   Ink    #0B0D10   structure — 60%  backgrounds, dark surfaces, text on paper
+ *   Paper  #FBF8F2   surface   — 30%  reading areas, app background, text on ink
+ *   Ember  #E4572E   signal    — 10%  primary action, current question, focus ring
+ *
+ * SEMANTIC, NEVER DECORATIVE
+ *   Lichen    answered / correct / present
+ *   Marigold  review / warning
+ *   Oxblood   not answered / wrong / absent / danger
+ *   Glacier   live / info
+ *   Dust      muted / not visited
+ *   A semantic colour never becomes a section background and never decorates a
+ *   card. Each ships with a fill, an AA-legible text variant on paper
+ *   (…-deep) and an AA-legible text variant on ink (…-soft).
+ *
+ * OUTSIDE THIS FILE
+ *   No hex. Components use the token utilities generated below. Where an
+ *   arbitrary colour is unavoidable (mask gradients, hairline borders on ink
+ *   panels, chart strokes) use rgb(var(--vyuh-…)) with the channel tokens
+ *   declared here. `npm run lint` enforces it.
+ */
+
+@theme {
+  /* ── Palette ───────────────────────────────────────────────────────────── */
+  --color-ink: #0b0d10;
+  --color-ink-raised: #15181d;
+  --color-ink-sunken: #07080a;
+  --color-paper: #fbf8f2;
+  --color-paper-raised: #ffffff;
+  --color-paper-sunken: #f1ece2;
+  --color-ember: #e4572e;
+  --color-ember-press: #c7461f;
+  --color-ember-wash: #fbe9e3;
+
+  --color-lichen: #5fa777;
+  --color-marigold: #f2b33d;
+  --color-oxblood: #b23a48;
+  --color-glacier: #7cc4d9;
+  --color-dust: #a8a195;
+
+  /* Text-safe variants (contrast measured, see README). */
+  --color-lichen-deep: #2f6a46;
+  --color-marigold-deep: #7d5306;
+  --color-oxblood-deep: #8c2733;
+  --color-glacier-deep: #1b6478;
+  --color-dust-deep: #6b6459;
+
+  --color-lichen-soft: #8fc7a2;
+  --color-marigold-soft: #f6cd80;
+  --color-oxblood-soft: #e4919b;
+  --color-glacier-soft: #a3d7e6;
+  --color-dust-soft: #c2bcb1;
+
+  /* Ink-on-signal pairs, for filled status chips only. */
+  --color-on-signal: #0b0d10;
+  --color-on-signal-inverse: #fbf8f2;
+
+
+  /* ── Paper-on-ink text ramp ──────────────────────────────────────────────
+   * The ink surfaces (rail, hero, exam header) need a ladder for labels, meta
+   * and body copy on paper-coloured text. These are the only four steps.
+   * Contrast on Ink: 86% 13.5:1 · 74% 9.6:1 · 66% 8.2:1 · 56% 6.2:1 · 52% 5.4:1
+   */
+  --color-on-ink-strong: rgb(251 248 242 / 0.86);
+  --color-on-ink: rgb(251 248 242 / 0.74);
+  --color-on-ink-muted: rgb(251 248 242 / 0.66);
+  --color-on-ink-faint: rgb(251 248 242 / 0.56);
+  --color-on-ink-label: rgb(251 248 242 / 0.52);
+
+  /* Tints of paper for hover and selected rows on ink. */
+  --color-on-ink-wash: rgb(251 248 242 / 0.09);
+  --color-on-ink-wash-hover: rgb(251 248 242 / 0.05);
+  --color-on-ink-wash-soft: rgb(251 248 242 / 0.16);
+
+  /* ── Channel tokens, for the rare rgb() colour outside this file ───────── */
+  --vyuh-ink-rgb: 11 13 16;
+  --vyuh-paper-rgb: 251 248 242;
+  --vyuh-ember-rgb: 228 87 46;
+
+  /* ── Typography ────────────────────────────────────────────────────────── */
+  /* Each stack leads with a measured fallback (@font-face in index.html) so the
+   * first paint occupies the same width as the final paint. */
+  --font-display: 'Fraunces', 'Fraunces Fallback', 'Iowan Old Style', Georgia, serif;
+  --font-sans: 'Bricolage Grotesque', 'Bricolage Fallback', 'Segoe UI', system-ui, sans-serif;
+  --font-mono: 'JetBrains Mono', 'JetBrains Mono Fallback', ui-monospace, 'SFMono-Regular', monospace;
+
+  /* Scale ratio 1.25 from a 16px base. Nothing below 14px is a text token. */
+  --text-2xs: 0.75rem; /* 12 — mono labels and chart ticks only */
+  --text-2xs--line-height: 1.2;
+  --text-xs: 0.875rem; /* 14 — smallest permitted body size */
+  --text-xs--line-height: 1.45;
+  --text-sm: 1.09375rem; /* 17.5 — comfortable UI body */
+  --text-sm--line-height: 1.5;
+  --text-base: 1.25rem; /* 20 — reading measure, exam question floor */
+  --text-base--line-height: 1.55;
+  --text-lg: 1.5625rem; /* 25 */
+  --text-lg--line-height: 1.4;
+  --text-xl: 1.953rem; /* 31 */
+  --text-xl--line-height: 1.25;
+  --text-2xl: 2.441rem; /* 39 */
+  --text-2xl--line-height: 1.15;
+  --text-3xl: 3.052rem; /* 49 */
+  --text-3xl--line-height: 1.08;
+  --text-4xl: 3.815rem; /* 61 */
+  --text-4xl--line-height: 1.02;
+  --text-5xl: 4.768rem; /* 76 */
+  --text-5xl--line-height: 0.98;
+  --text-display: 5.96rem; /* 95 */
+  --text-display--line-height: 0.92;
+
+  --font-weight-book: 380;
+  --font-weight-ui: 450;
+  --font-weight-strong: 560;
+  --font-weight-display: 520;
+
+  --tracking-tightest: -0.045em;
+  --tracking-tighter: -0.03em;
+  --tracking-tight: -0.015em;
+  --tracking-wide: 0.02em;
+  --tracking-widest: 0.12em;
+
+  /* ── Space, radius, hairlines ──────────────────────────────────────────── */
+  --spacing-gutter: 1.5rem;
+  --spacing-rail: 15.5rem;
+  --spacing-rail-collapsed: 4.75rem;
+  --spacing-topbar: 3.75rem;
+  --spacing-touch: 2.75rem; /* 44 — minimum tap target */
+  --spacing-keypad: 3.5rem; /* 56 — exam keypad */
+
+  --radius-xs: 3px;
+  --radius-sm: 5px;
+  --radius-md: 8px;
+  --radius-lg: 12px;
+  --radius-sheet: 16px;
+
+  --border-hairline: 1px;
+
+  /* Shadows exist only on floating layers: menus, sheets, dialogs, toasts. */
+  --shadow-float: 0 1px 2px rgb(11 13 16 / 0.06), 0 8px 24px -8px rgb(11 13 16 / 0.16);
+  --shadow-overlay: 0 2px 4px rgb(11 13 16 / 0.08), 0 24px 64px -24px rgb(11 13 16 / 0.32);
+
+  /* ── Motion ────────────────────────────────────────────────────────────── */
+  --ease-entrance: cubic-bezier(0.16, 1, 0.3, 1);
+  --ease-exit: cubic-bezier(0.4, 0, 1, 1);
+  --ease-standard: cubic-bezier(0.2, 0, 0, 1);
+  --duration-micro: 175ms;
+  --duration-standard: 325ms;
+  --duration-expressive: 750ms;
+}
+
+/*
+ * Theme-aware semantic aliases. `@theme inline` keeps the var() reference inside
+ * the generated utility, so switching data-theme repaints the document without
+ * rebuilding a single class name.
+ */
+@theme inline {
+  /*
+   * Tailwind generates utilities from these names. `inline` keeps the var()
+   * reference in the generated CSS instead of resolving it once, and the
+   * scoped blocks further down re-declare the same names per theme — so a
+   * nested [data-theme] subtree (the design preview's dual panes) themes
+   * correctly, not just the document root.
+   */
+  --color-surface: var(--vyuh-surface);
+  --color-surface-raised: var(--vyuh-surface-raised);
+  --color-surface-sunken: var(--vyuh-surface-sunken);
+  --color-surface-inverse: var(--vyuh-surface-inverse);
+
+  --color-body: var(--vyuh-text);
+  --color-heading: var(--vyuh-text-strong);
+  --color-muted: var(--vyuh-text-muted);
+  --color-faint: var(--vyuh-text-faint);
+  --color-on-inverse: var(--vyuh-text-inverse);
+  --color-on-ember: var(--vyuh-text-on-ember);
+
+  --color-line: var(--vyuh-border);
+  --color-line-strong: var(--vyuh-border-strong);
+
+  --color-answer: var(--vyuh-answer);
+  --color-answer-fg: var(--vyuh-answer-fg);
+  --color-review: var(--vyuh-review);
+  --color-review-fg: var(--vyuh-review-fg);
+  --color-danger: var(--vyuh-danger);
+  --color-danger-fg: var(--vyuh-danger-fg);
+  --color-info: var(--vyuh-info);
+  --color-info-fg: var(--vyuh-info-fg);
+  --color-idle: var(--vyuh-idle);
+  --color-idle-fg: var(--vyuh-idle-fg);
+  --color-scrim: var(--vyuh-scrim);
+
+  /* Hairlines that must sit on Ink or Paper regardless of theme. */
+  --color-hairline-on-ink: rgb(251 248 242 / 0.14);
+  --color-hairline-on-ink-strong: rgb(251 248 242 / 0.28);
+  --color-hairline-on-paper: rgb(11 13 16 / 0.12);
+}
+
+/*
+ * ── Light: Paper is the surface, Ink is the text ─────────────────────────
+ * Also scoped to [data-theme='light'] so a subtree can be pinned to light while
+ * the document is dark. The /design-preview route depends on this: it renders
+ * every primitive twice, side by side, without reloading.
+ */
+:root,
+[data-theme='light'] {
+  color-scheme: light;
+
+  /* Semantic aliases, re-declared in each theme scope. A custom property whose
+   * value contains var() is substituted where it is DECLARED, so declaring these
+   * only on :root would freeze them to the root theme and break nested scopes
+   * (the /design-preview dual panes rely on this). */
+  --color-surface: var(--vyuh-surface);
+  --color-surface-raised: var(--vyuh-surface-raised);
+  --color-surface-sunken: var(--vyuh-surface-sunken);
+  --color-surface-inverse: var(--vyuh-surface-inverse);
+  --color-body: var(--vyuh-text);
+  --color-heading: var(--vyuh-text-strong);
+  --color-muted: var(--vyuh-text-muted);
+  --color-faint: var(--vyuh-text-faint);
+  --color-on-inverse: var(--vyuh-text-inverse);
+  --color-on-ember: var(--vyuh-text-on-ember);
+  --color-line: var(--vyuh-border);
+  --color-line-strong: var(--vyuh-border-strong);
+  --color-answer: var(--vyuh-answer);
+  --color-answer-fg: var(--vyuh-answer-fg);
+  --color-review: var(--vyuh-review);
+  --color-review-fg: var(--vyuh-review-fg);
+  --color-danger: var(--vyuh-danger);
+  --color-danger-fg: var(--vyuh-danger-fg);
+  --color-info: var(--vyuh-info);
+  --color-info-fg: var(--vyuh-info-fg);
+  --color-idle: var(--vyuh-idle);
+  --color-idle-fg: var(--vyuh-idle-fg);
+  --color-scrim: var(--vyuh-scrim);
+
+  --vyuh-surface: #fbf8f2;
+  --vyuh-surface-raised: #ffffff;
+  --vyuh-surface-sunken: #f1ece2;
+  --vyuh-surface-inverse: #0b0d10;
+
+  --vyuh-text: #24272c; /* 14.1:1 on Paper */
+  --vyuh-text-strong: #0b0d10; /* 17.9:1 */
+  --vyuh-text-muted: #5d5a52; /* 6.5:1 */
+  --vyuh-text-faint: #6e685c; /* 5.2:1 — mono labels and meta */
+  --vyuh-text-inverse: #fbf8f2;
+  --vyuh-text-on-ember: #1a0d08; /* 5.2:1 on Ember */
+
+  --vyuh-border: rgb(11 13 16 / 0.12);
+  --vyuh-border-strong: rgb(11 13 16 / 0.24);
+
+  --vyuh-answer: #5fa777;
+  --vyuh-answer-fg: #2f6a46;
+  --vyuh-review: #f2b33d;
+  --vyuh-review-fg: #7d5306;
+  --vyuh-danger: #b23a48;
+  --vyuh-danger-fg: #8c2733;
+  --vyuh-info: #7cc4d9;
+  --vyuh-info-fg: #1b6478;
+  --vyuh-idle: #a8a195;
+  --vyuh-idle-fg: #6b6459;
+
+  --vyuh-scrim: rgb(11 13 16 / 0.55);
+}
+
+/* ── Dark: Ink is the surface, Paper is the text. Ember is unchanged. ───── */
+[data-theme='dark'] {
+  color-scheme: dark;
+
+  /* Semantic aliases, re-declared in each theme scope. A custom property whose
+   * value contains var() is substituted where it is DECLARED, so declaring these
+   * only on :root would freeze them to the root theme and break nested scopes
+   * (the /design-preview dual panes rely on this). */
+  --color-surface: var(--vyuh-surface);
+  --color-surface-raised: var(--vyuh-surface-raised);
+  --color-surface-sunken: var(--vyuh-surface-sunken);
+  --color-surface-inverse: var(--vyuh-surface-inverse);
+  --color-body: var(--vyuh-text);
+  --color-heading: var(--vyuh-text-strong);
+  --color-muted: var(--vyuh-text-muted);
+  --color-faint: var(--vyuh-text-faint);
+  --color-on-inverse: var(--vyuh-text-inverse);
+  --color-on-ember: var(--vyuh-text-on-ember);
+  --color-line: var(--vyuh-border);
+  --color-line-strong: var(--vyuh-border-strong);
+  --color-answer: var(--vyuh-answer);
+  --color-answer-fg: var(--vyuh-answer-fg);
+  --color-review: var(--vyuh-review);
+  --color-review-fg: var(--vyuh-review-fg);
+  --color-danger: var(--vyuh-danger);
+  --color-danger-fg: var(--vyuh-danger-fg);
+  --color-info: var(--vyuh-info);
+  --color-info-fg: var(--vyuh-info-fg);
+  --color-idle: var(--vyuh-idle);
+  --color-idle-fg: var(--vyuh-idle-fg);
+  --color-scrim: var(--vyuh-scrim);
+
+  --vyuh-surface: #0b0d10;
+  --vyuh-surface-raised: #15181d;
+  --vyuh-surface-sunken: #07080a;
+  --vyuh-surface-inverse: #fbf8f2;
+
+  --vyuh-text: #e8e4db; /* 15.3:1 on Ink */
+  --vyuh-text-strong: #fbf8f2; /* 18.9:1 */
+  --vyuh-text-muted: #a8a195; /* 7.6:1 */
+  --vyuh-text-faint: #8b857a; /* 5.3:1 */
+  --vyuh-text-inverse: #0b0d10;
+  --vyuh-text-on-ember: #1a0d08;
+
+  --vyuh-border: rgb(251 248 242 / 0.14);
+  --vyuh-border-strong: rgb(251 248 242 / 0.28);
+
+  --vyuh-answer: #5fa777;
+  --vyuh-answer-fg: #8fc7a2; /* 10.1:1 */
+  --vyuh-review: #f2b33d;
+  --vyuh-review-fg: #f6cd80; /* 12.9:1 */
+  --vyuh-danger: #b23a48;
+  --vyuh-danger-fg: #e4919b; /* 8.2:1 */
+  --vyuh-info: #7cc4d9;
+  --vyuh-info-fg: #a3d7e6; /* 12.4:1 */
+  --vyuh-idle: #a8a195;
+  --vyuh-idle-fg: #a8a195; /* 7.6:1 */
+
+  --vyuh-scrim: rgb(7 8 10 / 0.72);
+}

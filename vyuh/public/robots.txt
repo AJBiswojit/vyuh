@@ -1,0 +1,11 @@
+# Vyuh — Vidyut Academy's examination platform.
+#
+# The design-preview route is a development tool and is disallowed so it cannot
+# be indexed if a build ever ships it.
+
+User-agent: *
+Allow: /
+Disallow: /design-preview
+Disallow: /app/
+Disallow: /faculty/
+Disallow: /admin/

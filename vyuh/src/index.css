@@ -1,0 +1,278 @@
+@import 'tailwindcss';
+@import './styles/tokens.css';
+
+/*
+ * Base layer. No colour literals here — everything reads from tokens.css.
+ */
+@layer base {
+  *,
+  *::before,
+  *::after {
+    border-color: var(--color-line);
+  }
+
+  html {
+    -webkit-text-size-adjust: 100%;
+    scrollbar-color: var(--color-line-strong) transparent;
+  }
+
+  body {
+    background-color: var(--color-surface);
+    color: var(--color-body);
+    font-family: var(--font-sans);
+    font-size: var(--text-xs);
+    line-height: var(--text-xs--line-height);
+    font-variation-settings: 'wght' 450;
+    -webkit-font-smoothing: antialiased;
+    text-rendering: optimizeLegibility;
+  }
+
+  h1,
+  h2,
+  h3 {
+    font-family: var(--font-display);
+    color: var(--color-heading);
+    font-variation-settings: 'SOFT' 0, 'WONK' 1, 'wght' 520;
+    letter-spacing: var(--tracking-tight);
+    text-wrap: balance;
+  }
+
+  h4,
+  h5,
+  h6 {
+    font-family: var(--font-sans);
+    color: var(--color-heading);
+    font-variation-settings: 'wght' 560;
+    letter-spacing: var(--tracking-tight);
+  }
+
+  p {
+    text-wrap: pretty;
+  }
+
+  /* Marks, scores, timers, roll numbers: always tabular. */
+  .tnum,
+  time,
+  output,
+  kbd,
+  samp {
+    font-family: var(--font-mono);
+    font-variant-numeric: tabular-nums;
+    font-feature-settings: 'tnum' 1;
+  }
+
+  /* One focus treatment, everywhere: 2px ember with a 2px offset. */
+  :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 2px;
+    border-radius: var(--radius-xs);
+  }
+
+  ::selection {
+    background-color: var(--color-ember);
+    color: var(--color-on-ember);
+  }
+
+  /* First tab stop on every layout. */
+  .skip-link {
+    position: fixed;
+    top: 0.75rem;
+    left: 0.75rem;
+    z-index: 100;
+    background-color: var(--color-surface-inverse);
+    color: var(--color-on-inverse);
+    padding: 0.625rem 1rem;
+    border-radius: var(--radius-sm);
+    font-size: var(--text-xs);
+    transform: translateY(-200%);
+    transition: transform var(--duration-micro) var(--ease-entrance);
+  }
+  .skip-link:focus-visible {
+    transform: translateY(0);
+  }
+
+  /* Keyboard-only affordance for scroll regions. */
+  .scroll-region:focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 2px;
+  }
+}
+
+@layer components {
+  /* Mono eyebrow — the label voice of the product. */
+  .rule-label {
+    font-family: var(--font-mono);
+    font-size: var(--text-2xs);
+    line-height: 1.2;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+    color: var(--color-faint);
+  }
+
+  /* Paper grain: one low-opacity noise wash, ink surfaces only. */
+  .grain {
+    position: relative;
+    isolation: isolate;
+  }
+  .grain::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    z-index: -1;
+    pointer-events: none;
+    opacity: 0.055;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='120' height='120'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.8' numOctaves='3'/%3E%3C/filter%3E%3Crect width='120' height='120' filter='url(%23n)'/%3E%3C/svg%3E");
+  }
+
+  /* Structural hairline columns: at most once per view. */
+  .hairline-columns {
+    background-image: linear-gradient(to right, var(--color-line) 1px, transparent 1px);
+    background-size: 25% 100%;
+  }
+  .hairline-columns-on-ink {
+    background-image: linear-gradient(to right, var(--color-hairline-on-ink) 1px, transparent 1px);
+    background-size: 25% 100%;
+  }
+
+  /* Skeleton shimmer: static under reduced motion, always a visible block. */
+  .skeleton {
+    position: relative;
+    overflow: hidden;
+    background-color: color-mix(in oklab, var(--color-body) 9%, transparent);
+    border-radius: var(--radius-xs);
+  }
+  .skeleton::after {
+    content: '';
+    position: absolute;
+    inset: 0;
+    transform: translateX(-100%);
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      color-mix(in oklab, var(--color-body) 7%, transparent),
+      transparent
+    );
+    animation: skeleton-sweep 1.6s var(--ease-standard) infinite;
+  }
+
+  /*
+   * Skeleton on an Ink surface. The default block is derived from the body text
+   * colour, which on Ink is near-white at 9% — invisible against Ink. On a dark
+   * panel the placeholder must be built from paper instead.
+   */
+  .skeleton-on-ink,
+  .skeleton-on-ink::after {
+    background-color: rgb(var(--vyuh-paper-rgb) / 0.1);
+  }
+  .skeleton-on-ink::after {
+    background-image: linear-gradient(
+      90deg,
+      transparent,
+      rgb(var(--vyuh-paper-rgb) / 0.08),
+      transparent
+    );
+  }
+
+  @keyframes skeleton-sweep {
+    100% {
+      transform: translateX(100%);
+    }
+  }
+
+  /* Exam ticker. CSS rather than JS so the marquee never competes with the
+   * hero's loop for the main thread. Halved distance (-50%) because the track is
+   * rendered twice; pausing is done with animation-play-state from the component,
+   * which keeps hover, focus and reduced-motion all on the same switch. */
+  @keyframes exam-ticker {
+    from {
+      transform: translate3d(0, 0, 0);
+    }
+    to {
+      transform: translate3d(-50%, 0, 0);
+    }
+  }
+
+  .exam-ticker-track {
+    animation: exam-ticker 42s linear infinite;
+    will-change: transform;
+  }
+
+  /* Nothing moves by itself inside a region the user opted out of. */
+  @media (prefers-reduced-motion: reduce) {
+    .exam-ticker-track {
+      animation: none;
+      transform: none;
+    }
+  }
+
+  /* Hero headline words. The delay is set per word by the component; this is the
+   * shape of the movement, so the stagger stays a typographic decision. */
+  .hero-word {
+    display: inline-block;
+    will-change: transform, opacity;
+  }
+
+  /* Status ping: only for "this is happening now", only while motion is safe. */
+  @keyframes status-ping {
+    0% {
+      transform: scale(1);
+      opacity: 0.4;
+    }
+    70%,
+    100% {
+      transform: scale(2.4);
+      opacity: 0;
+    }
+  }
+
+  /* The landing hero card is the single permitted looping animation. */
+  @keyframes hero-drift {
+    0%,
+    100% {
+      transform: translateY(0);
+    }
+    50% {
+      transform: translateY(-6px);
+    }
+  }
+}
+
+/*
+ * Density. Compact tightens vertical rhythm in registers only. It never shrinks
+ * type and never takes a control below its 44px target.
+ */
+html[data-density='compact'] [data-row] {
+  padding-top: 0.5rem;
+  padding-bottom: 0.5rem;
+}
+html[data-density='compact'] [data-card-body] {
+  padding-top: 0.875rem;
+  padding-bottom: 0.875rem;
+}
+
+/*
+ * REDUCED MOTION
+ * One switch for the whole product. Movement becomes a fade (opacity and colour
+ * transitions are kept), loops stop, and skeletons resolve to a static block.
+ * framer-motion is switched separately by <MotionConfig reducedMotion="user">,
+ * and components that animate values in JS read usePrefersReducedMotion().
+ */
+@media (prefers-reduced-motion: reduce) {
+  *,
+  *::before,
+  *::after {
+    animation-duration: 0.01ms !important;
+    animation-iteration-count: 1 !important;
+    transition-duration: 0.01ms !important;
+    scroll-behavior: auto !important;
+  }
+
+  .skeleton::after {
+    animation: none;
+    opacity: 0;
+  }
+
+  .motion-safe-only {
+    animation: none !important;
+  }
+}
