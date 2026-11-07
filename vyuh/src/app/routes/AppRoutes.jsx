@@ -38,8 +38,18 @@ const FacultyRecordingEditorPage = lazy(() => import('@/features/faculty/pages/F
 const FacultyAttendancePage = lazy(() => import('@/features/faculty/pages/FacultyAttendancePage.jsx').then((m) => ({ default: m.FacultyAttendancePage })))
 const FacultyDoubtsPage = lazy(() => import('@/features/faculty/pages/FacultyDoubtsPage.jsx').then((m) => ({ default: m.FacultyDoubtsPage })))
 const FacultyDoubtThreadPage = lazy(() => import('@/features/faculty/pages/FacultyDoubtThreadPage.jsx').then((m) => ({ default: m.FacultyDoubtThreadPage })))
-const AdminFeesPage = lazy(() => import('@/features/admin/pages/AdminFeesPage.jsx').then((m) => ({ default: m.AdminFeesPage })))
-const AdminBatchesPage = lazy(() => import('@/features/batches/pages/AdminBatchesPage.jsx').then((m) => ({ default: m.AdminBatchesPage })))
+const AdminDashboardPage = lazy(() => import('@/features/admin/pages/AdminDashboardPage.jsx').then((m) => ({ default: m.AdminDashboardPage })))
+const AdminUsersPage = lazy(() => import('@/features/admin/pages/AdminUsersPage.jsx').then((m) => ({ default: m.AdminUsersPage })))
+const AdminImportPage = lazy(() => import('@/features/admin/pages/AdminImportPage.jsx').then((m) => ({ default: m.AdminImportPage })))
+const AdminBatchesPage = lazy(() => import('@/features/admin/pages/AdminBatchesPage.jsx').then((m) => ({ default: m.AdminBatchesPage })))
+const AdminBatchDetailPage = lazy(() => import('@/features/admin/pages/AdminBatchDetailPage.jsx').then((m) => ({ default: m.AdminBatchDetailPage })))
+const AdminApprovalsPage = lazy(() => import('@/features/admin/pages/AdminApprovalsPage.jsx').then((m) => ({ default: m.AdminApprovalsPage })))
+const AdminPoliciesPage = lazy(() => import('@/features/admin/pages/AdminPoliciesPage.jsx').then((m) => ({ default: m.AdminPoliciesPage })))
+const AdminIntegrityPage = lazy(() => import('@/features/admin/pages/AdminIntegrityPage.jsx').then((m) => ({ default: m.AdminIntegrityPage })))
+const AdminReportsPage = lazy(() => import('@/features/admin/pages/AdminReportsPage.jsx').then((m) => ({ default: m.AdminReportsPage })))
+const AdminModerationPage = lazy(() => import('@/features/admin/pages/AdminModerationPage.jsx').then((m) => ({ default: m.AdminModerationPage })))
+const AdminAuditPage = lazy(() => import('@/features/admin/pages/AdminAuditPage.jsx').then((m) => ({ default: m.AdminAuditPage })))
+const AdminSettingsPage = lazy(() => import('@/features/admin/pages/AdminSettingsPage.jsx').then((m) => ({ default: m.AdminSettingsPage })))
 const StudentBatchPage = lazy(() => import('@/features/batches/pages/StudentBatchPage.jsx').then((m) => ({ default: m.StudentBatchPage })))
 const ExamsPage = lazy(() => import('@/features/student/pages/ExamsPage.jsx').then((m) => ({ default: m.ExamsPage })))
 const ExamDetailPage = lazy(() => import('@/features/exam/pages/ExamDetailPage.jsx').then((m) => ({ default: m.ExamDetailPage })))
@@ -178,9 +188,18 @@ export function AppRoutes() {
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allow={['admin']} />}>
             <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminBatchesPage />} />
+              <Route index element={<AdminDashboardPage />} />
+              <Route path="/admin/users" element={<AdminUsersPage />} />
+              <Route path="/admin/users/import" element={<AdminImportPage />} />
               <Route path="/admin/batches" element={<AdminBatchesPage />} />
-              <Route path="/admin/fees" element={<AdminFeesPage />} />
+              <Route path="/admin/batches/:batchId" element={<AdminBatchDetailPage />} />
+              <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
+              <Route path="/admin/policies" element={<AdminPoliciesPage />} />
+              <Route path="/admin/integrity" element={<AdminIntegrityPage />} />
+              <Route path="/admin/reports" element={<AdminReportsPage />} />
+              <Route path="/admin/moderation" element={<AdminModerationPage />} />
+              <Route path="/admin/audit" element={<AdminAuditPage />} />
+              <Route path="/admin/settings" element={<AdminSettingsPage />} />
               <Route path="/admin/account" element={<AccountPage />} />
               <Route path="*" element={<NotFoundPage />} />
             </Route>

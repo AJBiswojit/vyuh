@@ -30,15 +30,19 @@ export function Sheet({ open, onClose, title, description, side = 'right', size 
   const panelRef = useRef(/** @type {HTMLDivElement | null} */ (null))
   const headingId = useId()
 
+  // Same rule as Dialog: an inline onClose must not re-run the focus trap.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return
     const releaseScroll = lockScroll()
-    const releaseFocus = trapFocus(panelRef.current, { onClose })
+    const releaseFocus = trapFocus(panelRef.current, { onClose: () => onCloseRef.current() })
     return () => {
       releaseFocus()
       releaseScroll()
     }
-  }, [open, onClose])
+  }, [open])
 
   const geometry = {
     right: 'inset-y-0 right-0 h-full w-full border-l',

@@ -23,7 +23,7 @@ Password for all three: `vyuh2026`.
 |---|---|---|
 | Student | ananya.sahoo@vidyutacademy.in | Overview: next paper, six-mock trend, study log, report, live class, notices |
 | Faculty | snehasish@vidyutacademy.in | Today's sessions, the doubt queue, papers needing a decision, and a cohort snapshot; nine destinations from bank to attendance |
-| Academic office | academic.office@vidyutacademy.in | Batch register with search and ordering |
+| Academic office | academic.office@vidyutacademy.in | Institution overview, then users and CSV import, batches, approvals, policies, integrity, reports, moderation, audit log and settings |
 
 ## Environment
 
@@ -92,11 +92,16 @@ driven by a mock realtime event emitter; and the Phase 7 faculty workspace — a
 question bank with a split preview, a five-type editor with live LaTeX, a paper
 builder with the student palette, a live exam monitor, item analysis with a
 fault policy that moves student scores, class scheduling and hosting, a recording
-editor, an attendance register with CSV export and a doubt inbox.
+editor, an attendance register with CSV export and a doubt inbox; and the Phase 8
+academic office — an institution overview, user management with a four-step CSV
+import that validates every row before it writes, batch and faculty assignment,
+an exam approval queue, policies with live impact counts, integrity decisions that
+require a note, mock report exports, content moderation, an audit ledger and
+institute branding.
 See `PHASE-2.md` for auth fixtures, `PHASE-3.md` for the student workspace,
 `PHASE-4.md` for the exam player, `PHASE-5.md` for result analysis,
-`PHASE-6.md` for live classes, attendance, recordings, doubts and study rooms, and
-`PHASE-7.md` for the faculty workspace.
+`PHASE-6.md` for live classes, attendance, recordings, doubts and study rooms,
+`PHASE-7.md` for the faculty workspace, and `PHASE-8.md` for the academic office.
 
 To try the player: sign in as the student, open **Exams → Live → NEET Practice
 01 → Exam detail**. The dashboard Next Up card also opens exam detail; the
@@ -135,3 +140,13 @@ session and opens its **Host console**; **Recordings** uploads a mock file whose
 transfer finishes in the editor; **Attendance** exports the visible rows as CSV.
 Browser demo flags: `vyuh.mock.monitorIntervalSeconds` (default 5) and
 `vyuh.mock.hostTickSeconds` (default 6) speed up the live feeds.
+
+To try the academic office: sign in as the academic office seat. The console opens
+on the institution overview. **Users → Import a CSV** offers two samples — the
+second is deliberately broken, and the validation step lists every bad row before
+the commit button will move. **Policies → Attendance threshold → Change** counts
+the batches and students the new value touches before it applies; the change then
+appears in **Audit log**. **Integrity** holds decisions still needing a note:
+`int-0601` on NEET Mock 06 is the one to try. Nothing in the console
+writes without leaving a ledger entry, and the colour system on **Settings** is
+deliberately read-only.

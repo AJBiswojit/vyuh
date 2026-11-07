@@ -43,3 +43,21 @@ export {
   facultyProfile, facultyClasses, hostParticipants, facultyRecordings, replyTemplates,
   facultyDoubts, attendanceRows, attendancePeriod, cohortSnapshot, facultyDashboard,
 } from './facultyWorkspace.js'
+
+/* ── Phase 8: institution console ──────────────────────────────────────── */
+export {
+  adminBatches, facultyRoster, batchStatusLabels, batchTracks, cohortLabels, batchRoomOptions,
+} from './batchesAdmin.js'
+export {
+  ADMIN_ID, adminProfile, adminTerm, userStatusLabels, adminRoleLabels, adminUsers, activeBatches,
+  attendanceTrend, calendarStatusLabels, adminExamCalendar, adminAlerts,
+  moderationKindLabels, moderationStatusLabels, moderationQueue,
+  reportDefinitions, reportFormats, reportRange, brandingDefaults, lockedColourSystem,
+} from './institution.js'
+export { adminPolicies, policyHistory, policyScopeLabels } from './policies.js'
+export { AUDIT_ACTIONS, auditActionLabel, auditSeed } from './auditLog.js'
+export {
+  integrityReports, integrityDecisionLabels, integrityDecisionDescriptions, evidenceKindLabels,
+} from './integrityReports.js'
+export { approvalQueue, approvalStatusLabels } from './approvals.js'
+export { IMPORT_FIELDS, IMPORT_MAX_ROWS, IMPORT_HEADER_ALIASES, importSampleFileName, importSamples } from './importCsv.js'

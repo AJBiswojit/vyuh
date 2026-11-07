@@ -184,6 +184,34 @@
  * @property {(facultyId: string, doubtId: string) => Promise<import('../contracts/faculty.js').FacultyDoubt>} resolveDoubt
  * @property {(facultyId: string) => Promise<import('../contracts/faculty.js').ReplyTemplate[]>} listReplyTemplates
  *
+ * ── Admin (Phase 8) ─────────────────────────────────────────────────────
+ * The academic office reads across batches and writes a decision trail. Every
+ * mutating method appends to the same audit ledger the audit screen reads.
+ * @typedef {Object} AdminService
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').AdminDashboard>} getDashboard
+ * @property {(adminId: string, query?: import('../contracts/admin.js').UserQuery) => Promise<import('../contracts/admin.js').UserPage>} listUsers
+ * @property {() => Promise<{ fields: import('../contracts/admin.js').ImportField[], aliases: Record<string,string[]>, samples: Record<string, { label: string, fileName: string, description: string, csv: string }>, maxRows: number, fileName: string }>} getImportTemplate
+ * @property {(adminId: string, input: { csv: string, mapping: Record<string,string>, fixes?: Record<number, Record<string,string>>, skipped?: number[] }) => Promise<import('../contracts/admin.js').ImportPreview>} previewImport
+ * @property {(adminId: string, input: { csv: string, mapping: Record<string,string>, fixes?: Record<number, Record<string,string>>, skipped?: number[], fileName?: string }) => Promise<import('../contracts/admin.js').ImportCommitResult>} commitImport
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').AdminBatch[]>} listAdminBatches
+ * @property {(adminId: string, batchId: string) => Promise<import('../contracts/admin.js').BatchDetail>} getAdminBatch
+ * @property {(adminId: string, batchId: string, facultyIds: string[]) => Promise<import('../contracts/admin.js').AdminBatch>} saveBatchFaculty
+ * @property {(adminId: string, filter?: { status?: 'all'|'pending'|'approved'|'rejected' }) => Promise<import('../contracts/admin.js').ApprovalItem[]>} listApprovals
+ * @property {(adminId: string, examId: string, input: import('../contracts/admin.js').ApprovalDecisionInput) => Promise<import('../contracts/admin.js').ApprovalItem>} decideApproval
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').PolicyDefinition[]>} listPolicies
+ * @property {(adminId: string, key: string, value: string|number) => Promise<import('../contracts/admin.js').PolicyImpact>} getPolicyImpact
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').PolicyChange[]>} listPolicyHistory
+ * @property {(adminId: string, input: { key: string, value: string|number, note?: string }) => Promise<import('../contracts/admin.js').PolicyDefinition>} updatePolicy
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').IntegrityReport[]>} listIntegrityReports
+ * @property {(adminId: string, examId: string) => Promise<import('../contracts/admin.js').IntegrityReport>} getIntegrityReport
+ * @property {(adminId: string, input: { examId: string, sessionId: string, decision: import('../contracts/admin.js').IntegrityDecision, note: string }) => Promise<import('../contracts/admin.js').IntegrityReport>} decideIntegrity
+ * @property {(adminId: string, request: import('../contracts/admin.js').ReportRequest) => Promise<import('../contracts/admin.js').ReportResult>} runReport
+ * @property {(adminId: string, filter?: { kind?: 'all'|'doubt'|'chat', status?: 'all'|import('../contracts/admin.js').ModerationStatus }) => Promise<import('../contracts/admin.js').ModerationItem[]>} listModeration
+ * @property {(adminId: string, input: { id: string, decision: 'remove'|'dismiss'|'warn', note?: string }) => Promise<import('../contracts/admin.js').ModerationItem>} decideModeration
+ * @property {(adminId: string, query?: import('../contracts/admin.js').AuditQuery) => Promise<import('../contracts/admin.js').AuditPage>} listAudit
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').Branding>} getBranding
+ * @property {(adminId: string, input: Partial<import('../contracts/admin.js').Branding>) => Promise<import('../contracts/admin.js').Branding>} saveBranding
+ *
  * @typedef {Object} Services
  * @property {AuthService} auth
  * @property {LandingService} landing
@@ -199,6 +227,7 @@
  * @property {AnalysisService} analysis
  * @property {LearningService} learning
  * @property {FacultyService} faculty
+ * @property {AdminService} admin
  */
 
 export {};

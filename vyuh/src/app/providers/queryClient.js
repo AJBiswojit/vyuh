@@ -104,4 +104,34 @@ export const queryKeys = {
     /** @param {string} facultyId */
     replyTemplates(facultyId) { return ['faculty', facultyId, 'reply-templates'] },
   },
+
+  /* Phase 8 — institution console. One namespace, then the screen. */
+  admin: {
+    /** @param {string} adminId */
+    dashboard(adminId) { return ['admin', adminId, 'dashboard'] },
+    /** @param {string} adminId @param {object} query */
+    users(adminId, query) { return ['admin', adminId, 'users', query] },
+    /** @param {string} adminId */
+    batches(adminId) { return ['admin', adminId, 'batches'] },
+    /** @param {string} adminId @param {string} batchId */
+    batch(adminId, batchId) { return ['admin', adminId, 'batches', batchId] },
+    /** @param {string} adminId @param {string} status */
+    approvals(adminId, status) { return ['admin', adminId, 'approvals', status] },
+    /** @param {string} adminId */
+    policies(adminId) { return ['admin', adminId, 'policies'] },
+    /** @param {string} adminId @param {string} key @param {string|number} value */
+    policyImpact(adminId, key, value) { return ['admin', adminId, 'policies', key, 'impact', value] },
+    /** @param {string} adminId */
+    policyHistory(adminId) { return ['admin', adminId, 'policies', 'history'] },
+    /** @param {string} adminId */
+    integrityReports(adminId) { return ['admin', adminId, 'integrity'] },
+    /** @param {string} adminId @param {string} examId */
+    integrityReport(adminId, examId) { return ['admin', adminId, 'integrity', examId] },
+    /** @param {string} adminId @param {object} filter */
+    moderation(adminId, filter) { return ['admin', adminId, 'moderation', filter] },
+    /** @param {string} adminId @param {object} query */
+    audit(adminId, query) { return ['admin', adminId, 'audit', query] },
+    /** @param {string} adminId */
+    branding(adminId) { return ['admin', adminId, 'branding'] },
+  },
 }

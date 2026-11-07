@@ -105,6 +105,31 @@ const facultyApi = Object.fromEntries(
 facultyApi.subscribeMonitor = () => { throw facultyError() }
 facultyApi.subscribeHost = () => { throw facultyError() }
 
+/**
+ * The institution console has no published HTTP endpoints either. Same rule as
+ * the faculty stubs: reject with a sentence a screen can show, never a blank
+ * panel. There is no subscription here — the console is request/response.
+ */
+function adminError() {
+  const error = new Error('The institution console is mock-only in this build. Set VITE_USE_MOCK=true, or publish the admin endpoints.')
+  error.name = 'ServiceError'
+  Object.assign(error, { code: 'admin_api_unavailable', status: 501, retryable: false })
+  return error
+}
+
+const adminMethodNames = [
+  'getDashboard', 'listUsers', 'getImportTemplate', 'previewImport', 'commitImport', 'listAdminBatches',
+  'getAdminBatch', 'saveBatchFaculty', 'listApprovals', 'decideApproval', 'listPolicies',
+  'getPolicyImpact', 'listPolicyHistory', 'updatePolicy', 'listIntegrityReports',
+  'getIntegrityReport', 'decideIntegrity', 'runReport', 'listModeration', 'decideModeration',
+  'listAudit', 'getBranding', 'saveBranding',
+]
+
+/** @type {Record<string, unknown>} */
+const adminApi = Object.fromEntries(
+  adminMethodNames.map((name) => [name, () => Promise.reject(adminError())]),
+)
+
 /** @type {Services} */
 export const apiServices = {
   auth: {
@@ -319,6 +344,8 @@ export const apiServices = {
   },
 
   faculty: /** @type {unknown} */ (facultyApi),
+
+  admin: /** @type {unknown} */ (adminApi),
 
   live: {
     listUpcoming() {

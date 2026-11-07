@@ -92,6 +92,42 @@
  * @typedef {import('./faculty.js').FacultyDoubt} FacultyDoubt
  * @typedef {import('./faculty.js').ReplyTemplate} ReplyTemplate
  * @typedef {import('./faculty.js').FacultyDashboard} FacultyDashboard
+ *
+ * Institution console (Phase 8).
+ * @typedef {import('./admin.js').AdminRole} AdminRole
+ * @typedef {import('./admin.js').AdminUser} AdminUser
+ * @typedef {import('./admin.js').UserQuery} UserQuery
+ * @typedef {import('./admin.js').UserPage} UserPage
+ * @typedef {import('./admin.js').UserFacets} UserFacets
+ * @typedef {import('./admin.js').AdminBatch} AdminBatch
+ * @typedef {import('./admin.js').BatchDetail} BatchDetail
+ * @typedef {import('./admin.js').BatchMember} BatchMember
+ * @typedef {import('./admin.js').RosterFaculty} RosterFaculty
+ * @typedef {import('./admin.js').AdminDashboard} AdminDashboard
+ * @typedef {import('./admin.js').AdminStat} AdminStat
+ * @typedef {import('./admin.js').AttendanceTrendPoint} AttendanceTrendPoint
+ * @typedef {import('./admin.js').CalendarExam} CalendarExam
+ * @typedef {import('./admin.js').InstitutionAlert} InstitutionAlert
+ * @typedef {import('./admin.js').ApprovalItem} ApprovalItem
+ * @typedef {import('./admin.js').ApprovalDecisionInput} ApprovalDecisionInput
+ * @typedef {import('./admin.js').PolicyDefinition} PolicyDefinition
+ * @typedef {import('./admin.js').PolicyImpact} PolicyImpact
+ * @typedef {import('./admin.js').PolicyChange} PolicyChange
+ * @typedef {import('./admin.js').IntegrityReport} IntegrityReport
+ * @typedef {import('./admin.js').IntegritySession} IntegritySession
+ * @typedef {import('./admin.js').IntegrityDecision} IntegrityDecision
+ * @typedef {import('./admin.js').ModerationItem} ModerationItem
+ * @typedef {import('./admin.js').AuditEntry} AuditEntry
+ * @typedef {import('./admin.js').AuditQuery} AuditQuery
+ * @typedef {import('./admin.js').AuditPage} AuditPage
+ * @typedef {import('./admin.js').ImportField} ImportField
+ * @typedef {import('./admin.js').ImportRow} ImportRow
+ * @typedef {import('./admin.js').ImportPreview} ImportPreview
+ * @typedef {import('./admin.js').ImportCommitResult} ImportCommitResult
+ * @typedef {import('./admin.js').ReportDefinition} ReportDefinition
+ * @typedef {import('./admin.js').ReportRequest} ReportRequest
+ * @typedef {import('./admin.js').ReportResult} ReportResult
+ * @typedef {import('./admin.js').Branding} Branding
  */
 
 export {};
