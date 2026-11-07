@@ -88,7 +88,7 @@ export function FacultyHomePage() {
                     {formatNumber(batch.studentCount)} students · {batch.testCount} papers
                   </span>
                   <Link
-                    to="/app/batches"
+                    to="/student/batches"
                     className="inline-flex min-h-9 items-center text-2xs font-[560] text-heading hover:text-ember-press"
                   >
                     Open batch

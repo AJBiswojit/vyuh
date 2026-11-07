@@ -38,7 +38,7 @@ export function InstitutesSection({ content }) {
               </a>
               <p className="text-xs text-muted">
                 {institutes.ctaNote.split('sign in')[0]}
-                <Link to="/sign-in" className="text-heading underline decoration-line-strong underline-offset-2 hover:decoration-ember">
+                <Link to="/login" className="text-heading underline decoration-line-strong underline-offset-2 hover:decoration-ember">
                   sign in
                 </Link>
                 {institutes.ctaNote.split('sign in')[1]}

@@ -7,9 +7,9 @@
  * Taps and status changes: spring, stiffness 500, damping 30.
  */
 
-export const easeEntrance = [0.16, 1, 0.3, 1]
-export const easeExit = [0.4, 0, 1, 1]
-export const easeStandard = [0.2, 0, 0, 1]
+export const easeEntrance = /** @type {[number, number, number, number]} */ ([0.16, 1, 0.3, 1])
+export const easeExit = /** @type {[number, number, number, number]} */ ([0.4, 0, 1, 1])
+export const easeStandard = /** @type {[number, number, number, number]} */ ([0.2, 0, 0, 1])
 
 export const durations = {
   micro: 0.175,

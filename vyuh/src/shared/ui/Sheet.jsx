@@ -20,11 +20,11 @@ import { IconButton } from './IconButton.jsx'
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  * @param {string} props.title
- * @param {string} [description]
- * @param {'right'|'left'|'bottom'} [side]
- * @param {'sm'|'md'|'lg'} [size]
- * @param {React.ReactNode} [footer]
- * @param {React.ReactNode} [children]
+ * @param {string} [props.description]
+ * @param {'right'|'left'|'bottom'} [props.side]
+ * @param {'sm'|'md'|'lg'} [props.size]
+ * @param {React.ReactNode} [props.footer]
+ * @param {React.ReactNode} [props.children]
  */
 export function Sheet({ open, onClose, title, description, side = 'right', size = 'md', footer, children }) {
   const panelRef = useRef(/** @type {HTMLDivElement | null} */ (null))

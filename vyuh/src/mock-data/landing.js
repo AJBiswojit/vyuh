@@ -20,7 +20,7 @@
 /**
  * @typedef {Object} NavLink
  * @property {string} label
- * @property {string} href   In-page anchor ("#analysis") or route ("/sign-in").
+ * @property {string} href   In-page anchor ("#analysis") or route ("/login").
  *
  * @typedef {Object} HeroAction
  * @property {string} label
@@ -56,8 +56,8 @@ export const landingContent = {
       { label: 'Live classes', href: '#live-classes' },
       { label: 'For institutes', href: '#institutes' },
     ],
-    signIn: { label: 'Sign in', to: '/sign-in' },
-    cta: { label: 'Start a mock', to: '/sign-in' },
+    signIn: { label: 'Sign in', to: '/login' },
+    cta: { label: 'Start a mock', to: '/login' },
     skip: 'Skip to main content',
   },
 
@@ -69,7 +69,7 @@ export const landingContent = {
       'Full-length mocks on the real pattern, a report that names the chapter behind every lost mark, and live classes that record who was actually there.',
     /** @type {HeroAction[]} */
     actions: [
-      { label: 'Start a mock', to: '/sign-in', tone: 'ember', kind: 'internal' },
+      { label: 'Start a mock', to: '/login', tone: 'ember', kind: 'internal' },
       { label: 'See how analysis works', to: '#analysis', tone: 'ghost', kind: 'anchor' },
     ],
     footnote: 'Sign-in is issued by your institute at enrolment.',
@@ -257,21 +257,21 @@ export const landingContent = {
         heading: 'Students',
         audience: 'Sign in as a student',
         links: [
-          { label: 'Sign in', to: '/sign-in', hint: 'Papers, marks, recordings' },
+          { label: 'Sign in', to: '/login', hint: 'Papers, marks, recordings' },
         ],
       },
       {
         heading: 'Faculty',
         audience: 'Sign in as faculty',
         links: [
-          { label: 'Sign in', to: '/sign-in', hint: 'Batches, question bank, evaluation' },
+          { label: 'Sign in', to: '/login', hint: 'Batches, question bank, evaluation' },
         ],
       },
       {
         heading: 'Academic office',
         audience: 'Sign in as the academic office',
         links: [
-          { label: 'Sign in', to: '/sign-in', hint: 'Enrolment, fees, institute reports' },
+          { label: 'Sign in', to: '/login', hint: 'Enrolment, fees, institute reports' },
         ],
       },
       {

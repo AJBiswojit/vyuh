@@ -30,5 +30,12 @@ export const isMockMode = !useApi
  * @type {ReadonlyArray<{ email: string, role: import('../contracts/user.js').Role, label: string }>}
  */
 export const demoSeats = isMockMode ? demoAccounts : []
+import { demoScenarios as scenarios, demoCredentials as credentials, demoInstituteCode as instituteCode, demoInviteCode as inviteCode, demoOtp as otp, expiredDemoOtp as expiredOtp } from './mock/index.js'
+export const demoScenarios = isMockMode ? scenarios : []
+export const demoCredentials = isMockMode ? credentials : ''
+export const demoInstituteCode = isMockMode ? instituteCode : ''
+export const demoInviteCode = isMockMode ? inviteCode : ''
+export const demoOtp = isMockMode ? otp : ''
+export const expiredDemoOtp = isMockMode ? expiredOtp : ''
 
 export { mockServices, apiServices }

@@ -1,0 +1,49 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:04.000
+The reflection property replaces x by a plus b minus x without changing the value of the integral.
+
+2
+00:00:04.000 --> 00:00:08.000
+Add the original and reflected forms; a symmetric denominator often collapses to a constant.
+
+3
+00:00:08.000 --> 00:00:12.000
+This is why the king property is powerful for sine and cosine over a full symmetric interval.
+
+4
+00:00:12.000 --> 00:00:16.000
+When you substitute, change the limits immediately. Old limits with a new variable are a common error.
+
+5
+00:00:16.000 --> 00:00:20.000
+If t equals a plus b minus x, then dt equals minus dx and the limits swap.
+
+6
+00:00:20.000 --> 00:00:24.000
+The two minus signs cancel when you reorder the limits, leaving the integral unchanged.
+
+7
+00:00:24.000 --> 00:00:28.000
+Symmetry gives a shortcut: the integral of an odd function over minus a to a is zero.
+
+8
+00:00:28.000 --> 00:00:32.000
+Check oddness about the centre of the interval, not only about the origin.
+
+9
+00:00:32.000 --> 00:00:36.000
+Split the integrand into symmetric and antisymmetric parts before doing heavy algebra.
+
+10
+00:00:36.000 --> 00:00:40.000
+Practice prompt: integrate x over minus two to two, then integrate x squared over the same interval.
+
+11
+00:00:40.000 --> 00:00:44.000
+The first is zero by odd symmetry; the second is twice the integral from zero to two.
+
+12
+00:00:44.000 --> 00:00:48.000
+Write both answers with a one-line reason, then take the end check.

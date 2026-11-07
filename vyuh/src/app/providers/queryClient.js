@@ -32,4 +32,40 @@ export const queryKeys = {
   subjects: ['subjects'],
   latestReport: (id) => ['students', id, 'reports', 'latest'],
   liveSessions: ['live', 'sessions'],
+  recordings: ['live', 'recordings'],
+  studentProfile: (id) => ['students', id, 'profile'],
+  studentExams: (id) => ['students', id, 'exams'],
+  studentAttempts: (id) => ['students', id, 'attempts'],
+  studentPerformance: (id) => ['students', id, 'performance'],
+  studentNotifications: (id) => ['students', id, 'notifications'],
+  studentAttendance: (id) => ['students', id, 'attendance'],
+  studentDoubts: (id) => ['students', id, 'doubts'],
+  studentStudyRooms: (id) => ['students', id, 'study-rooms'],
+  /** @param {string} examId @param {string} studentId */
+  examPaper: (examId, studentId) => ['exams', examId, 'paper', studentId],
+  /** @param {string} examId @param {string} studentId @param {string} [attemptId] */
+  examAnalysis: (examId, studentId, attemptId) => ['exams', examId, 'analysis', studentId, attemptId ?? 'latest'],
+  /** @param {string} studentId @param {string} topicId */
+  topicRevision: (studentId, topicId) => ['students', studentId, 'revision', topicId],
+  /** Phase 6 learning */
+  /** @param {string} studentId */
+  liveSchedule(studentId) { return ['learning', 'live', 'schedule', studentId] },
+  /** @param {string} sessionId @param {string} studentId */
+  liveRoom(sessionId, studentId) { return ['learning', 'live', 'room', sessionId, studentId] },
+  /** @param {string} sessionId @param {string} studentId */
+  liveAttendance(sessionId, studentId) { return ['learning', 'live', 'attendance', sessionId, studentId] },
+  /** @param {string} studentId */
+  attendanceReport(studentId) { return ['learning', 'attendance', 'report', studentId] },
+  /** @param {string} studentId */
+  recordingLibrary(studentId) { return ['learning', 'recordings', studentId] },
+  /** @param {string} recordingId @param {string} studentId */
+  recording(recordingId, studentId) { return ['learning', 'recordings', recordingId, studentId] },
+  /** @param {string} studentId */
+  doubtInbox(studentId) { return ['learning', 'doubts', studentId] },
+  /** @param {string} doubtId @param {string} studentId */
+  doubtThread(doubtId, studentId) { return ['learning', 'doubts', doubtId, studentId] },
+  /** @param {string} studentId */
+  studyRoomList(studentId) { return ['learning', 'study-rooms', studentId] },
+  /** @param {string} roomId @param {string} studentId */
+  studyRoom(roomId, studentId) { return ['learning', 'study-rooms', roomId, studentId] },
 }

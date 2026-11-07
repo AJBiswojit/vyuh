@@ -20,14 +20,14 @@ import { cn } from '@/shared/lib/cn.js'
  * @param {SelectProps & React.ComponentPropsWithoutRef<'select'>} props
  * @param {React.Ref<HTMLSelectElement>} ref
  */
-function SelectInner({ label, options, hint, error, placeholder, className, id, ...rest }, ref) {
+function SelectInner({ label, options, hint, error, placeholder, className, id, 'aria-describedby': externalDescribedBy, ...rest }, ref) {
   const generated = useId()
   const fieldId = id ?? generated
-  const describedBy = error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined
+  const describedBy = [hint ? `${fieldId}-hint` : null, error ? `${fieldId}-error` : null, externalDescribedBy].filter(Boolean).join(' ') || undefined
 
   return (
     <div className={cn('flex w-full flex-col gap-2', className)}>
-      <label htmlFor={fieldId} className="text-2xs font-[560] tracking-tight text-heading">
+      <label htmlFor={fieldId} className="text-xs font-[560] tracking-tight text-heading">
         {label}
       </label>
       <div className="relative">
@@ -62,12 +62,13 @@ function SelectInner({ label, options, hint, error, placeholder, className, id, 
         />
       </div>
       {error ? (
-        <p id={`${fieldId}-error`} className="flex items-start gap-1.5 text-2xs text-danger-fg">
+        <p id={`${fieldId}-error`} className="flex items-start gap-1.5 text-xs text-danger-fg" role="alert">
           <AlertCircle className="mt-px size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
           <span>{error}</span>
         </p>
-      ) : hint ? (
-        <p id={`${fieldId}-hint`} className="text-2xs text-muted">
+      ) : null}
+      {hint ? (
+        <p id={`${fieldId}-hint`} className="text-xs text-muted">
           {hint}
         </p>
       ) : null}

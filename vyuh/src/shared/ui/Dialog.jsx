@@ -20,13 +20,13 @@ import { Button } from './Button.jsx'
  * @param {boolean} props.open
  * @param {() => void} props.onClose
  * @param {string} props.title
- * @param {string} [description]
- * @param {React.ReactNode} [children]
- * @param {string} [confirmLabel]
- * @param {string} [cancelLabel]
- * @param {() => void} [onConfirm]
- * @param {'neutral'|'danger'} [tone]     Tone of the confirm action.
- * @param {boolean} [busy]
+ * @param {string} [props.description]
+ * @param {React.ReactNode} [props.children]
+ * @param {string} [props.confirmLabel]
+ * @param {string} [props.cancelLabel]
+ * @param {() => void} [props.onConfirm]
+ * @param {'neutral'|'danger'} [props.tone]     Tone of the confirm action.
+ * @param {boolean} [props.busy]
  */
 export function Dialog({
   open,

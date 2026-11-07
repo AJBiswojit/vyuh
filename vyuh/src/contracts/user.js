@@ -13,6 +13,10 @@
  * @property {string} initials              Two characters, precomputed for avatars.
  * @property {string} [phone]               E.164 without spaces.
  * @property {string} joinedAt              ISO 8601 date.
+ * @property {string} [instituteCode]
+ * @property {string} [batchId]
+ * @property {string} [batchName]
+ * @property {string} [guardianEmail]       Optional; used only for attendance summaries.
  *
  * @typedef {Object} Student
  * @property {import('./ids.js').StudentId} id
@@ -33,6 +37,8 @@
  * @property {string} token                 Opaque session token.
  * @property {User} user
  * @property {number} expiresInSeconds
+ * @property {number} issuedAt             Epoch milliseconds; restoring never extends it.
+ * @property {number} expiresAt            Epoch milliseconds; exactly eight hours after issue in mock mode.
  */
 
 export {};

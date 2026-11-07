@@ -1,17 +1,20 @@
-/**
- * Role copy lives in one place so a seat always reads the same way.
- * @param {import('../../contracts/user.js').Role} role
- * @returns {string}
- */
+/** @param {import('../../contracts/user.js').Role} role */
 export function roleLabel(role) {
   return { student: 'Student', faculty: 'Faculty', admin: 'Academic office' }[role] ?? 'Member'
 }
 
-/**
- * Where a role lands after sign-in.
- * @param {import('../../contracts/user.js').Role} role
- * @returns {string}
- */
+/** Each role has a distinct home and layout. */
+export const HOME_FOR_ROLE = Object.freeze({ student: '/student', faculty: '/faculty', admin: '/admin' })
+
+/** @param {import('../../contracts/user.js').Role} role */
 export function homeRouteFor(role) {
-  return role === 'student' || role === 'faculty' || role === 'admin' ? '/app' : '/'
+  return HOME_FOR_ROLE[role] ?? '/'
+}
+
+/** Only same-origin application paths are valid post-login destinations. */
+/** @param {unknown} value */
+export function safeReturnPath(value) {
+  if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null
+  if (/^\/(login|sign-in|signup|verify-otp|forgot-password|reset-password|join)(\/|\?|$)/.test(value)) return null
+  return value
 }

@@ -17,7 +17,7 @@ import { usePrefersReducedMotion } from '@/shared/hooks/usePrefersReducedMotion.
  * @typedef {Object} LogoProps
  * @property {boolean} [withName]
  * @property {'ink'|'paper'} [tone]   Cell colour for the surface it sits on.
- * @property {'sm'|'md'|'lg'} [size]
+ * @property {'sm'|'md'|'lg'|'xl'} [size]
  * @property {boolean} [loading]
  * @property {string | null} [to]      Wraps the mark in a link when set.
  * @property {string} [className]
@@ -36,16 +36,19 @@ const WALK = [
   [1, 1],
 ]
 
+/** @type {Record<'sm'|'md'|'lg'|'xl', { cell: number, gap: number }>} */
 const SIZES = {
   sm: { cell: 4, gap: 2 },
   md: { cell: 5, gap: 2 },
   lg: { cell: 7, gap: 3 },
+  xl: { cell: 20, gap: 7 },
 }
 
-export function Logo({ withName = true, tone = 'ink', size = 'md', loading = false, to = null, className }) {
+/** @param {LogoProps} props */
+export function Logo({ withName = true, tone = 'ink', size = 'md', loading = false, to = null, className = '' }) {
   const reduced = usePrefersReducedMotion()
   const { cell, gap } = SIZES[size]
-  const nameSize = { sm: 'text-sm', md: 'text-lg', lg: 'text-xl' }[size]
+  const nameSize = /** @type {Record<'sm'|'md'|'lg'|'xl', string>} */ ({ sm: 'text-sm', md: 'text-lg', lg: 'text-xl', xl: 'text-3xl' })[size]
   const track = cell + gap
 
   const cells = (

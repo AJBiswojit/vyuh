@@ -1,43 +1,34 @@
 import { Outlet, useLocation } from 'react-router-dom'
-import { BookOpen, LayoutGrid, Notebook, SlidersHorizontal } from 'lucide-react'
-import { WorkspaceLayout, Breadcrumb } from './WorkspaceLayout.jsx'
+import { Calendar, FileText, LayoutGrid, MessageCircle, Play, Radio, TrendingUp, User, Users } from 'lucide-react'
+import { StudentShell } from '@/features/student/components/StudentShell.jsx'
 import { useSessionStore } from '@/shared/store/sessionStore.js'
 
-/** Student navigation. Only routes that exist are listed. */
+/** Student navigation. Every item has a rendered workspace page. */
 export const STUDENT_NAV = [
-  { to: '/app', label: 'Overview', description: 'Your week, your next paper, your batch', icon: LayoutGrid },
-  { to: '/app/papers', label: 'Papers', description: 'Scheduled, open and evaluated papers', icon: Notebook },
-  { to: '/app/batch', label: 'Batch', description: 'Schedule, subjects and faculty', icon: BookOpen },
-  { to: '/app/account', label: 'Account', description: 'Profile, preferences and session', icon: SlidersHorizontal },
+  { to: '/student', label: 'Dashboard', description: 'Next exam, strength, results and schedule', icon: LayoutGrid },
+  { to: '/student/exams', label: 'Exams', description: 'Upcoming, live and past papers', icon: FileText },
+  { to: '/student/live', label: 'Live classes', description: 'Today’s classes and upcoming sessions', icon: Radio },
+  { to: '/student/recordings', label: 'Recordings', description: 'Continue watching class recordings', icon: Play },
+  { to: '/student/performance', label: 'Performance', description: 'Score and subject trends', icon: TrendingUp },
+  { to: '/student/doubts', label: 'Doubts', description: 'Timestamped question threads with faculty', icon: MessageCircle },
+  { to: '/student/attendance', label: 'Attendance', description: 'Monthly presence, verdicts and grace rule', icon: Calendar },
+  { to: '/student/study-rooms', label: 'Study rooms', description: 'Interactive small-group practice rooms', icon: Users },
+  { to: '/student/profile', label: 'Profile', description: 'Details, batch and preferences', icon: User },
 ]
 
-const CRUMBS = {
-  '/app': [{ label: 'Workspace' }],
-  '/app/papers': [{ label: 'Workspace', to: '/app' }, { label: 'Papers' }],
-  '/app/batch': [{ label: 'Workspace', to: '/app' }, { label: 'Batch' }],
-  '/app/account': [{ label: 'Workspace', to: '/app' }, { label: 'Account' }],
-}
+const CRUMBS = Object.fromEntries(STUDENT_NAV.map((item) => [
+  item.to,
+  item.to === '/student' ? [{ label: 'Dashboard' }] : [{ label: 'Dashboard', to: '/student' }, { label: item.label }],
+]))
 
-/**
- * StudentLayout — the student's workspace. Wraps WorkspaceLayout with the
- * student navigation and the student's own seat description (roll number, not
- * job title), so the account chip says something true.
- *
- * @param {{ children?: React.ReactNode }} props
- */
+/** @param {{ children?: React.ReactNode }} props */
 export function StudentLayout({ children }) {
   const location = useLocation()
   const user = useSessionStore((state) => state.user)
-  const crumbs = CRUMBS[location.pathname] ?? [{ label: 'Workspace', to: '/app' }, { label: 'Not found' }]
-
+  const crumbs = CRUMBS[location.pathname] ?? [{ label: 'Dashboard', to: '/student' }, { label: 'Student' }]
   return (
-    <WorkspaceLayout
-      items={STUDENT_NAV}
-      workspaceLabel="Student workspace"
-      breadcrumb={<Breadcrumb items={crumbs} />}
-      seatMeta="VY-25-0187 · Prayas"
-    >
+    <StudentShell items={STUDENT_NAV} workspaceLabel="Student workspace" breadcrumb={crumbs} seatMeta={user?.batchName ?? 'Student workspace'}>
       {children ?? <Outlet />}
-    </WorkspaceLayout>
+    </StudentShell>
   )
 }

@@ -23,14 +23,14 @@ import { cn } from '@/shared/lib/cn.js'
  * @param {InputProps & React.ComponentPropsWithoutRef<'input'>} props
  * @param {React.Ref<HTMLInputElement>} ref
  */
-function InputInner({ label, hint, error, icon, trailing, className, containerClassName, id, ...rest }, ref) {
+function InputInner({ label, hint, error, icon, trailing, className, containerClassName, id, 'aria-describedby': externalDescribedBy, ...rest }, ref) {
   const generated = useId()
   const fieldId = id ?? generated
-  const describedBy = error ? `${fieldId}-error` : hint ? `${fieldId}-hint` : undefined
+  const describedBy = [hint ? `${fieldId}-hint` : null, error ? `${fieldId}-error` : null, externalDescribedBy].filter(Boolean).join(' ') || undefined
 
   return (
     <div className={cn('flex w-full flex-col gap-2', containerClassName)}>
-      <label htmlFor={fieldId} className="text-2xs font-[560] tracking-tight text-heading">
+      <label htmlFor={fieldId} className="text-xs font-[560] tracking-tight text-heading">
         {label}
       </label>
       <div className="relative flex items-center">
@@ -52,8 +52,8 @@ function InputInner({ label, hint, error, icon, trailing, className, containerCl
             error
               ? 'border-[color-mix(in_oklab,var(--color-danger)_60%,transparent)]'
               : 'border-line-strong hover:border-heading',
-            icon && 'pl-9',
-            trailing && 'pr-12',
+            icon ? 'pl-9' : null,
+            trailing ? 'pr-12' : null,
             className,
           )}
           {...rest}
@@ -61,12 +61,13 @@ function InputInner({ label, hint, error, icon, trailing, className, containerCl
         {trailing ? <span className="absolute right-1">{trailing}</span> : null}
       </div>
       {error ? (
-        <p id={`${fieldId}-error`} className="flex items-start gap-1.5 text-2xs text-danger-fg">
+        <p id={`${fieldId}-error`} className="flex items-start gap-1.5 text-xs text-danger-fg" role="alert">
           <AlertCircle className="mt-px size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
           <span>{error}</span>
         </p>
-      ) : hint ? (
-        <p id={`${fieldId}-hint`} className="text-2xs text-muted">
+      ) : null}
+      {hint ? (
+        <p id={`${fieldId}-hint`} className="text-xs text-muted">
           {hint}
         </p>
       ) : null}

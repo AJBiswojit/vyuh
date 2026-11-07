@@ -8,14 +8,15 @@ import { cn } from '@/shared/lib/cn.js'
  * component does not invent that copy.
  *
  * @param {Object} props
- * @param {string} title
- * @param {string} [description]
- * @param {string} [code]              e.g. 'E_SNAPSHOT', 'gateway_timeout'.
- * @param {React.ReactNode} [action]   The retry / escape control. Almost always present.
- * @param {'inline'|'panel'} [size]
- * @param {string} [className]
+ * @param {string} props.title
+ * @param {string} props.description
+ * @param {string} [props.code]              e.g. 'E_SNAPSHOT', 'gateway_timeout'.
+ * @param {React.ReactNode} [props.icon]
+ * @param {React.ReactNode} [props.action]   The retry / escape control. Almost always present.
+ * @param {'inline'|'panel'} [props.size]
+ * @param {string} [props.className]
  */
-export function ErrorState({ title, description, code, action, size = 'inline', className }) {
+export function ErrorState({ title, description, code, icon, action, size = 'inline', className }) {
   return (
     <div
       role="alert"
@@ -27,7 +28,7 @@ export function ErrorState({ title, description, code, action, size = 'inline', 
       )}
     >
       <div className="flex items-center gap-2">
-        <AlertTriangle className="size-[1.1rem] text-danger-fg" strokeWidth={1.5} aria-hidden="true" />
+        {icon ? <span className="text-danger-fg [&>svg]:size-[1.1rem]" aria-hidden="true">{icon}</span> : <AlertTriangle className="size-[1.1rem] text-danger-fg" strokeWidth={1.5} aria-hidden="true" />}
         {code ? <p className="rule-label text-danger-fg">{code}</p> : null}
       </div>
       <div className="max-w-prose">

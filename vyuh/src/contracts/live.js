@@ -16,6 +16,10 @@
  * @property {number} capacity
  * @property {string} joinUrl
  * @property {boolean} resourcesAttached
+ * @property {'interactive'|'broadcast'} mode
+ * @property {string} batchId
+ * @property {string} batchName
+ * @property {string} mediaUrl                  Looping local sample media for the mock stage.
  */
 
 export {};
