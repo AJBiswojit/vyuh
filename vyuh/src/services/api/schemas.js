@@ -6,29 +6,15 @@
  * handled error state instead of a component blowing up three renders later.
  */
 import { z } from 'zod'
+import { userSchema } from '../authSchemas.js'
 
 const isoDate = z.string().min(1)
 const isoDateTime = z.string().min(1)
 
-export const roleSchema = z.enum(['student', 'faculty', 'admin'])
+export { roleSchema, userSchema, authSessionSchema } from '../authSchemas.js'
+export { loginSchema, signupSchema, otpSchema, forgotPasswordSchema, resetPasswordSchema, acceptInviteSchema, resetPasswordRequestSchema, acceptInviteRequestSchema, authChallengeSchema, resetRequestSchema, signupOptionsSchema, facultyInviteSchema } from '../authSchemas.js'
 export const trackSchema = z.enum(['JEE', 'NEET', 'NTA'])
 export const cohortSchema = z.enum(['class11', 'class12', 'dropper'])
-
-export const userSchema = z.object({
-  id: z.string(),
-  name: z.string(),
-  email: z.string(),
-  role: roleSchema,
-  initials: z.string().length(2),
-  phone: z.string().optional(),
-  joinedAt: isoDate,
-})
-
-export const authSessionSchema = z.object({
-  token: z.string().min(1),
-  user: userSchema,
-  expiresInSeconds: z.number().int().positive(),
-})
 
 export const studentSchema = z.object({
   id: z.string(),
@@ -87,6 +73,43 @@ export const testSchema = z.object({
   activeAttemptId: z.string().nullable(),
 })
 
+export const examSchema = testSchema.extend({
+  sectionCount: z.number().int().positive(),
+  negativeMarks: z.number().nonnegative(),
+  endsAt: isoDateTime.nullable(),
+  instructions: z.array(z.string()),
+})
+
+export const subjectScoreSchema = z.object({
+  subjectId: z.string(), subjectName: z.string(), scored: z.number(), max: z.number().positive(), accuracy: z.number(),
+})
+export const attemptSummarySchema = z.object({
+  id: z.string(), examId: z.string(), title: z.string(), submittedAt: isoDateTime,
+  score: z.number(), maxMarks: z.number().positive(), percentile: z.number(), accuracy: z.number(),
+  sparkline: z.array(z.number()), subjects: z.array(subjectScoreSchema),
+})
+export const subjectStrengthSchema = z.object({
+  subjectId: z.string(), name: z.string(), score: z.number().min(0).max(100), batchAverage: z.number().min(0).max(100),
+  delta: z.number(), trend: z.array(z.number()),
+})
+export const recordingSchema = z.object({
+  id: z.string(), title: z.string(), chapterName: z.string(), subjectName: z.string(), facultyName: z.string(),
+  durationMinutes: z.number().int().positive(), progressPercent: z.number().min(0).max(100), lastWatchedAt: isoDateTime,
+})
+export const attendanceSummarySchema = z.object({
+  present: z.number().int().nonnegative(), total: z.number().int().nonnegative(), percentage: z.number().min(0).max(100),
+  periodLabel: z.string(), currentStreak: z.number().int().nonnegative(),
+})
+export const notificationPreferencesSchema = z.object({
+  examReminders: z.boolean(), liveClassReminders: z.boolean(), resultPublished: z.boolean(), attendanceAlerts: z.boolean(), productUpdates: z.boolean(),
+})
+export const dataConsentPreferencesSchema = z.object({
+  attendanceTracking: z.boolean(), performanceAnalytics: z.boolean(), guardianSummary: z.boolean(),
+})
+export const studentPreferencesSchema = z.object({ notifications: notificationPreferencesSchema, dataConsent: dataConsentPreferencesSchema })
+export const studentNotificationSchema = z.object({
+  id: z.string(), title: z.string(), body: z.string(), createdAt: isoDateTime, read: z.boolean(), kind: z.enum(['exam', 'class', 'result', 'institute']),
+})
 export const scoreReportSchema = z.object({
   attemptId: z.string(),
   score: z.number(),
@@ -119,6 +142,10 @@ export const trendPointSchema = z.object({
   cohortAverage: z.number(),
 })
 
+export const performanceSnapshotSchema = z.object({
+  attempts: z.array(attemptSummarySchema), scoreTrend: z.array(trendPointSchema), subjects: z.array(subjectStrengthSchema),
+})
+
 export const courseSchema = z.object({
   id: z.string(),
   name: z.string(),
@@ -149,6 +176,100 @@ export const questionSchema = z.object({
   negativeMarks: z.number().nonnegative(),
 })
 
+export const examSectionSchema = z.object({
+  id: z.string(), subjectId: z.string(), name: z.string(), order: z.number().int().nonnegative(), questionIds: z.array(z.string()),
+})
+export const examQuestionSchema = questionSchema.extend({
+  sectionId: z.string(), numericTolerance: z.number().nonnegative().optional(), unit: z.string().optional(),
+})
+export const examPaperSchema = z.object({
+  exam: examSchema,
+  sections: z.array(examSectionSchema),
+  questions: z.array(examQuestionSchema),
+  candidate: z.object({ name: z.string(), rollNumber: z.string() }),
+  serverNow: isoDateTime, offsetMs: z.number(), durationSeconds: z.number().int().positive(),
+  rules: z.array(z.string()),
+  markingScheme: z.object({ correct: z.number(), incorrect: z.number(), unattempted: z.number() }),
+  declaration: z.string(),
+})
+export const examStartInputSchema = z.object({
+  examId: z.string(), studentId: z.string(), declarationAccepted: z.boolean(), systemCheckPassed: z.boolean(),
+})
+export const examStartReceiptSchema = z.object({
+  attemptId: z.string(), examId: z.string(), studentId: z.string(), startedAt: isoDateTime, deadlineAt: isoDateTime,
+  serverNow: isoDateTime, offsetMs: z.number(), durationSeconds: z.number().int().positive(), resumed: z.boolean(),
+})
+export const answerEntrySchema = z.object({
+  questionId: z.string(), state: z.enum(['answered', 'review', 'review_answered', 'not_answered', 'not_visited']),
+  selected: z.array(z.string()), timeSpentSeconds: z.number().nonnegative(),
+})
+export const confidenceSchema = z.enum(['sure', 'unsure', 'guessing']).nullable()
+export const integrityEventSchema = z.object({
+  type: z.enum(['tab_switch', 'copy_blocked', 'cut_blocked', 'context_menu_blocked', 'fullscreen_prompt', 'fullscreen_enter', 'fullscreen_exit']),
+  at: isoDateTime, questionId: z.string().optional(),
+})
+export const examSyncInputSchema = z.object({
+  attemptId: z.string(), revision: z.number().int().nonnegative(), entries: z.array(answerEntrySchema),
+  confidences: z.record(z.string(), confidenceSchema), integrityEvents: z.array(integrityEventSchema),
+})
+export const examSyncReceiptSchema = z.object({ attemptId: z.string(), revision: z.number().int().nonnegative(), syncedAt: isoDateTime })
+export const questionVisitSchema = z.object({
+  questionId: z.string(), enteredAt: isoDateTime, leftAt: isoDateTime.nullable(), durationSeconds: z.number().nonnegative(),
+})
+export const examSubmissionInputSchema = z.object({
+  attemptId: z.string(), examId: z.string(), studentId: z.string(), submittedAt: isoDateTime,
+  reason: z.enum(['manual', 'timer_expired']), remainingSeconds: z.number().int().nonnegative(),
+  entries: z.array(answerEntrySchema), confidences: z.record(z.string(), confidenceSchema), integrityEvents: z.array(integrityEventSchema),
+  visits: z.array(questionVisitSchema).optional(),
+})
+export const examSubmissionReceiptSchema = z.object({
+  attemptId: z.string(), examId: z.string(), examTitle: z.string(), studentId: z.string(), submittedAt: isoDateTime,
+  reason: z.enum(['manual', 'timer_expired']),
+  counts: z.object({ answered: z.number().int().nonnegative(), notAnswered: z.number().int().nonnegative(), review: z.number().int().nonnegative(), notVisited: z.number().int().nonnegative(), total: z.number().int().positive() }),
+  pendingSync: z.boolean(),
+})
+
+export const markingSchemeSchema = z.object({ correct: z.number(), incorrect: z.number(), unattempted: z.number() })
+export const responseDistributionSchema = z.object({
+  key: z.string(), label: z.string(), count: z.number().int().nonnegative(), percent: z.number().min(0).max(100), correct: z.boolean(), selectedByStudent: z.boolean(),
+})
+export const mistakeCategorySchema = z.enum(['conceptual', 'careless', 'time_pressure', 'misread', 'guess'])
+export const questionAnalysisSchema = z.object({
+  id: z.string(), number: z.number().int().positive(), sectionId: z.string(), sectionName: z.string(), subjectId: z.string(), topicId: z.string(), topicName: z.string(),
+  question: examQuestionSchema, studentAnswer: z.array(z.string()), correctAnswer: z.array(z.string()), outcome: z.enum(['correct', 'wrong', 'skipped']),
+  confidence: confidenceSchema, confidentMistake: z.boolean(), luckyGuess: z.boolean(), mistakeCategory: mistakeCategorySchema.nullable(), mistakeLabel: z.string(),
+  marksDelta: z.number(), timeSpentSeconds: z.number().nonnegative(), cohortAverageSeconds: z.number().nonnegative(), cohortMedianSeconds: z.number().nonnegative(),
+  difficultyIndex: z.number().min(0).max(100), responseDistribution: z.array(responseDistributionSchema), explanation: z.string(),
+})
+export const pacingPointSchema = z.object({
+  questionNumber: z.number().int().positive(), questionId: z.string(), studentSeconds: z.number().nonnegative(), cohortAverageSeconds: z.number().nonnegative(),
+  cohortMedianSeconds: z.number().nonnegative(), cohortBand: z.tuple([z.number().nonnegative(), z.number().nonnegative()]), flag: z.enum(['rushed', 'stalled']).nullable(),
+})
+export const attemptVisitSchema = z.object({ sequence: z.number().int().positive(), questionId: z.string(), questionNumber: z.number().int().positive(), sectionName: z.string(), enteredAt: isoDateTime, durationSeconds: z.number().nonnegative() })
+export const mistakeDnaSliceSchema = z.object({ id: mistakeCategorySchema, label: z.string(), count: z.number().int().nonnegative(), percent: z.number().min(0).max(100), advice: z.string() })
+export const heatmapCellSchema = z.object({ sectionId: z.string(), sectionName: z.string(), topicId: z.string(), topicName: z.string(), attempted: z.number().int().nonnegative(), correct: z.number().int().nonnegative(), accuracy: z.number().min(0).max(100) })
+export const whatIfSummarySchema = z.object({ actualScore: z.number(), scoreWithoutNegative: z.number(), difference: z.number(), wrongCount: z.number().int().nonnegative(), negativeMarksLost: z.number().nonnegative() })
+export const analysisSummarySchema = z.object({
+  score: z.number(), maxMarks: z.number().nonnegative(), rank: z.number().int().positive(), cohortSize: z.number().int().positive(), percentile: z.number().min(0).max(100),
+  accuracy: z.number().min(0).max(100), attempted: z.number().int().nonnegative(), correct: z.number().int().nonnegative(), wrong: z.number().int().nonnegative(), skipped: z.number().int().nonnegative(), durationSeconds: z.number().nonnegative(),
+  cost: z.object({ negativeMarksLost: z.number().nonnegative(), timeOnWrongSeconds: z.number().nonnegative(), confidentMistakes: z.number().int().nonnegative() }),
+})
+export const analysisTrendPointSchema = z.object({ label: z.string(), date: isoDateTime, track: trackSchema, score: z.number(), maxMarks: z.number().positive(), scorePercent: z.number(), percentile: z.number(), cohortAveragePercent: z.number() })
+export const analysisDetailsSchema = z.object({
+  summary: analysisSummarySchema, questions: z.array(questionAnalysisSchema), pacing: z.array(pacingPointSchema), path: z.array(attemptVisitSchema),
+  mistakeDna: z.array(mistakeDnaSliceSchema), dominantMistake: mistakeCategorySchema.nullable(), mistakeAdvice: z.string(), heatmap: z.array(heatmapCellSchema),
+  whatIf: whatIfSummarySchema, attemptTrend: z.array(analysisTrendPointSchema), markingScheme: markingSchemeSchema,
+})
+export const releasePolicySchema = z.object({ released: z.boolean(), releaseAt: isoDateTime.nullable(), serverNow: isoDateTime, offsetMs: z.number(), rule: z.string() })
+export const examAnalysisSchema = z.object({
+  examId: z.string(), examTitle: z.string(), attemptId: z.string(), studentId: z.string(), candidateName: z.string(), rollNumber: z.string(), submittedAt: isoDateTime,
+  source: z.enum(['fixture', 'submission']), release: releasePolicySchema, details: analysisDetailsSchema.nullable(),
+})
+export const topicRevisionSchema = z.object({
+  topicId: z.string(), topicName: z.string(), subjectName: z.string(), mastery: z.number().min(0).max(100), weightage: z.number().nonnegative(), advice: z.string(),
+  questions: z.array(z.object({ id: z.string(), number: z.number().int().positive(), body: z.string(), correctAnswer: z.array(z.string()), explanation: z.string() })),
+})
+
 export const liveSessionSchema = z.object({
   id: z.string(),
   title: z.string(),
@@ -162,6 +283,10 @@ export const liveSessionSchema = z.object({
   capacity: z.number().int().positive(),
   joinUrl: z.string(),
   resourcesAttached: z.boolean(),
+  mode: z.enum(['interactive', 'broadcast']),
+  batchId: z.string(),
+  batchName: z.string(),
+  mediaUrl: z.string(),
 })
 
 export const announcementSchema = z.object({
@@ -183,7 +308,7 @@ export const continueItemSchema = z.object({
 
 export const dashboardSnapshotSchema = z.object({
   student: studentSchema,
-  nextTest: testSchema.nullable(),
+  nextTest: examSchema.nullable(),
   liveNow: z.array(liveSessionSchema),
   lastReport: scoreReportSchema.nullable(),
   trend: z.array(trendPointSchema),
@@ -191,6 +316,12 @@ export const dashboardSnapshotSchema = z.object({
   announcements: z.array(announcementSchema),
   streakDays: z.number().int().nonnegative(),
   weeklyGoalPercent: z.number().min(0).max(100),
+  studyLog: z.array(z.object({ day: z.string(), minutes: z.number().nonnegative(), target: z.number().nonnegative() })).length(7),
+  recentAttempts: z.array(attemptSummarySchema),
+  subjectStrength: z.array(subjectStrengthSchema),
+  continueRecording: recordingSchema.nullable(),
+  schedule: z.array(liveSessionSchema),
+  attendance: attendanceSummarySchema,
 })
 
 export const instituteProfileSchema = z.object({
@@ -291,7 +422,65 @@ export const landingContentSchema = z.object({
   }),
 })
 
-export const credentialsSchema = z.object({
-  email: z.string().min(3),
-  password: z.string().min(1),
+export { loginSchema as credentialsSchema } from '../authSchemas.js'
+
+export const studentProfileSchema = z.object({
+  user: userSchema,
+  student: studentSchema,
+  batch: batchSchema,
+  institute: instituteProfileSchema,
+  preferences: studentPreferencesSchema,
 })
+export const doubtThreadSchema = z.object({ id: z.string(), title: z.string() })
+export const studyRoomSchema = z.object({ id: z.string(), name: z.string() })
+
+// ── Phase 6 learning ───────────────────────────────────────────────────────
+export const attendancePolicySchema = z.object({
+  thresholdPercent: z.number().min(0).max(100), graceMinutes: z.number().nonnegative(), attentionReward: z.number(), attentionPenalty: z.number(),
+  checkMinMinutes: z.number().positive(), checkMaxMinutes: z.number().positive(), responseWindowSeconds: z.number().positive(),
+})
+export const attentionResponseSchema = z.object({ checkId: z.string(), outcome: z.enum(['answered', 'missed']), at: isoDateTime, delta: z.number() })
+export const liveAttendanceStateSchema = z.object({
+  sessionId: z.string(), studentId: z.string(), joinedAt: isoDateTime, leftAt: isoDateTime.nullable(), connected: z.boolean(), visible: z.boolean(), lastTickAt: isoDateTime,
+  eligibleSeconds: z.number().nonnegative(), attendedSeconds: z.number().nonnegative(), attentionScore: z.number().min(0).max(100), presencePercent: z.number().min(0).max(100),
+  verdict: z.enum(['Present', 'Partial', 'Absent']), lastDelta: z.number(), responses: z.array(attentionResponseSchema), activeCheckId: z.string().nullable(), updatedAt: isoDateTime,
+})
+export const attendanceRecordSchema = z.object({
+  sessionId: z.string(), title: z.string(), subjectName: z.string(), batchName: z.string(), date: isoDateTime, presencePercent: z.number().min(0).max(100),
+  verdict: z.enum(['Present', 'Partial', 'Absent']), attendedMinutes: z.number().nonnegative(), eligibleMinutes: z.number().nonnegative(), live: z.boolean(),
+})
+export const attendanceReportSchema = z.object({ studentId: z.string(), periodLabel: z.string(), policy: attendancePolicySchema, sessions: z.array(attendanceRecordSchema), summary: attendanceSummarySchema, defaulter: z.boolean(), explanation: z.string() })
+export const chatMessageSchema = z.object({ id: z.string(), author: z.string(), role: z.enum(['student', 'faculty', 'system']), body: z.string(), sentAt: isoDateTime })
+export const queueQuestionSchema = z.object({ id: z.string(), sessionId: z.string(), author: z.string(), studentId: z.string(), body: z.string(), status: z.enum(['pending', 'approved']), upvotes: z.number().int().nonnegative(), votedByMe: z.boolean(), createdAt: isoDateTime, approvedAt: isoDateTime.nullable() })
+export const attentionChallengeSchema = z.object({ id: z.string(), issuedAt: isoDateTime, expiresAt: isoDateTime, windowSeconds: z.number().positive() })
+export const liveRoomSchema = z.object({ session: liveSessionSchema, policy: attendancePolicySchema, chat: z.array(chatMessageSchema), queue: z.array(queueQuestionSchema), attendance: liveAttendanceStateSchema.nullable(), recordingId: z.string().nullable() })
+export const playbackBookmarkSchema = z.object({ id: z.string(), timeSeconds: z.number().nonnegative(), label: z.string(), createdAt: isoDateTime })
+export const playbackNoteSchema = z.object({ id: z.string(), timeSeconds: z.number().nonnegative(), text: z.string(), createdAt: isoDateTime })
+export const playbackStateSchema = z.object({
+  recordingId: z.string(), positionSeconds: z.number().nonnegative(), watchedThroughSeconds: z.number().nonnegative(), durationSeconds: z.number().positive(), progressPercent: z.number().min(0).max(100),
+  speed: z.number().positive(), ended: z.boolean(), completedChapterIds: z.array(z.string()), bookmarks: z.array(playbackBookmarkSchema), notes: z.array(playbackNoteSchema), lastWatchedAt: isoDateTime,
+})
+export const recordingChapterSchema = z.object({ id: z.string(), title: z.string(), startSeconds: z.number().nonnegative(), endSeconds: z.number().positive() })
+export const transcriptSegmentSchema = z.object({ id: z.string(), startSeconds: z.number().nonnegative(), endSeconds: z.number().positive(), text: z.string() })
+export const practiceQuestionSchema = z.object({ id: z.string(), prompt: z.string(), options: z.array(z.object({ key: z.string(), text: z.string() })).min(2), correctKey: z.string(), explanation: z.string() })
+export const practiceQuizSchema = z.object({ id: z.string(), title: z.string(), questions: z.array(practiceQuestionSchema).length(3) })
+export const quizResultSchema = z.object({ quizId: z.string(), score: z.number().int().nonnegative(), total: z.number().int().positive(), answers: z.record(z.string(), z.string()), correctQuestionIds: z.array(z.string()), submittedAt: isoDateTime })
+export const recordingDetailSchema = recordingSchema.extend({
+  subjectId: z.string(), batchName: z.string(), description: z.string(), mediaUrl: z.string(), captionsUrl: z.string(), posterUrl: z.string(), durationSeconds: z.number().positive(), publishedAt: isoDateTime,
+  chapters: z.array(recordingChapterSchema), transcript: z.array(transcriptSegmentSchema), quiz: practiceQuizSchema, playback: playbackStateSchema, quizResult: quizResultSchema.nullable(),
+})
+export const doubtMessageSchema = z.object({ id: z.string(), author: z.string(), role: z.enum(['student', 'faculty']), body: z.string(), createdAt: isoDateTime })
+export const doubtThreadDetailSchema = z.object({
+  id: z.string(), title: z.string(), status: z.enum(['open', 'answered']), subjectName: z.string(), recordingId: z.string().nullable(), recordingTitle: z.string().nullable(),
+  timeSeconds: z.number().nonnegative().nullable(), createdAt: isoDateTime, updatedAt: isoDateTime, messages: z.array(doubtMessageSchema),
+})
+export const studyParticipantSchema = z.object({ id: z.string(), name: z.string(), initials: z.string(), presence: z.enum(['studying', 'speaking', 'away']), isSelf: z.boolean() })
+export const studyRoomDetailSchema = z.object({ id: z.string(), name: z.string(), mode: z.literal('interactive'), topic: z.string(), subjectName: z.string(), batchName: z.string(), peerCount: z.number().int().nonnegative(), capacity: z.number().int().positive(), focusMinutes: z.number().int().positive(), joined: z.boolean(), participants: z.array(studyParticipantSchema) })
+export const learningEventSchema = z.discriminatedUnion('type', [
+  z.object({ type: z.literal('chat'), message: chatMessageSchema }),
+  z.object({ type: z.literal('presence'), attendance: liveAttendanceStateSchema }),
+  z.object({ type: z.literal('attention-challenge'), challenge: attentionChallengeSchema }),
+  z.object({ type: z.literal('attention-resolved'), checkId: z.string() }),
+  z.object({ type: z.literal('question'), question: queueQuestionSchema }),
+  z.object({ type: z.literal('room-presence'), room: studyRoomDetailSchema }),
+])

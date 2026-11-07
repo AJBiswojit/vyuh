@@ -1,0 +1,9 @@
+<svg xmlns="http://www.w3.org/2000/svg" width="960" height="540" viewBox="0 0 960 540" role="img" aria-label="Rotational Dynamics sample poster">
+  <rect width="960" height="540" fill="#0b0d10"/><rect width="960" height="6" fill="#e4572e"/>
+  <text x="48" y="60" fill="#7cc4d9" font-family="monospace" font-size="18">VYUH · SAMPLE LECTURE MEDIA</text>
+  <text x="48" y="150" fill="#fbf8f2" font-family="sans-serif" font-weight="700" font-size="44">Rotational Dynamics</text>
+  <text x="48" y="205" fill="#fbf8f2" font-family="sans-serif" font-size="22">Torque &amp; Equilibrium · sample edit</text>
+  <circle cx="480" cy="340" r="54" fill="none" stroke="#7cc4d9" stroke-width="3"/>
+  <path d="M462 312 L516 340 L462 368 Z" fill="#e4572e"/>
+  <text x="48" y="492" fill="#5d5a52" font-family="monospace" font-size="16">48-second original sample · captions available</text>
+</svg>

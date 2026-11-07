@@ -2,8 +2,9 @@
 
 The only folder in Vyuh that holds fixture data, and the only one that may be
 deleted wholesale. Everything a screen reads — students, batches, papers,
-attempts, sessions, notices — lives here as plain objects that satisfy the JSDoc
-contracts in `src/contracts/`.
+attempts, sessions, notices, live classes, attendance, recordings, doubts and
+study rooms — lives here as plain objects that satisfy the JSDoc contracts in
+`src/contracts/`.
 
 ## Rules
 
@@ -17,11 +18,22 @@ contracts in `src/contracts/`.
 4. **Copy is real.** No lorem ipsum, no "Test 1", no `john@example.com`. The
    fixtures describe a fictional institute — *Vidyut Academy, Bhubaneswar* — so
    that spacing, truncation and truncation-of-real-words are judged honestly.
-5. **Latency and failure are simulated here, always.** `latency.js` owns both.
-   No service calls `setTimeout` directly.
+5. **Latency and failure are simulated here, always.** `latency.js` owns request
+   latency and failure; no service calls `setTimeout` for those. Scheduled *live*
+   events (chat, attention checks, faculty approval, room presence ticks) are the
+   one exception, and they run on `realtime.js`'s injectable channel clock — never
+   a raw service timer — so tests can drive them with fake timers.
 6. **Everything is exported through `index.js`.** That barrel is the single point
    a service touches, which is what makes step 3 of the removal recipe a one-line
    change.
+7. **Shared analysis arithmetic is pure.** `analysis.js` may use
+   `shared/lib/analysisMath.js` for filter/what-if math so the mock builder and
+   the UI apply the same rules; it never imports React or a service.
+8. **Shared learning arithmetic is pure, too.** Attendance coverage, presence
+   scoring, transcript highlighting and quiz grading live in
+   `shared/lib/learningMath.js`; the learning service and the player apply the
+   same rules. `realtime.js` holds only the emitter and channel factories — its
+   clock, RNG and timers are injected, so it never imports React or a service.
 
 ## The institute we model
 
@@ -41,10 +53,20 @@ contracts in `src/contracts/`.
 | `institute.js` | `InstituteProfile` | landing, footer, sign-in |
 | `users.js` | `User`, `Student`, `AuthSession` | auth, shell, dashboard |
 | `academics.js` | `Subject`, `Chapter`, `Batch` | batch screens, office register |
-| `assessments.js` | `Test`, `Attempt`, `ScoreReport`, `TrendPoint` | overview, reports |
-| `sessions.js` | `LiveSession`, `DailyStudyPoint` | overview, live classes |
+| `assessments.js` | `Test`, `Attempt`, `ScoreReport`, `TrendPoint` | overview, reports; re-exports `attempts.js` |
+| `attempts.js` | `AttemptSummary`, `ScoreReport`, `TrendPoint` | dashboard/performance history; Phase 5 trend normalization |
+| `exams.js` | `Exam` | exams ledger, exam detail |
+| `questions.js` | `ExamQuestion` (authored key included) | exam-flow service; keys stripped before the hall; Phase 5 evaluator |
+| `analysis.js` | `ExamAnalysis`, `AnalysisDetails`, `QuestionAnalysis`, `TopicRevision` | analysis service; cohort distributions, timing, Mistake DNA, release policy |
+| `sessions.js` | `DailyStudyPoint` | overview study log; re-exports `liveSessions` |
 | `courses.js` | `Course` | course catalogue |
 | `dashboard.js` | `DashboardSnapshot`, `Announcement` | student overview |
+| `liveSessions.js` | `LiveSession`, `LiveRoom` | live schedule and rooms; chat script, seed chat and question queue |
+| `attendance.js` | `AttendancePolicy`, `AttendanceReport` | policy, historical register, active-room seeds |
+| `recordings.js` | `RecordingDetail`, `PlaybackState` | chapters, timed transcript, end quizzes, playback seeds |
+| `doubts.js` | `DoubtThreadDetail`, `DoubtMessage` | seed threads with timestamp links |
+| `studyRooms.js` | `StudyRoomDetail`, `StudyParticipant` | rooms, participants, room visitors |
+| `realtime.js` | — | event emitter + injectable class/room channels (clock, RNG, timers) |
 | `index.js` | — | barrel; the only import target for services |
 
 ## Removing mock data before production

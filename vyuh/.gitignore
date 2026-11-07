@@ -22,3 +22,8 @@ dist-ssr
 *.njsproj
 *.sln
 *.sw?
+
+# Agent / browser test artifacts
+.arena/
+playwright-report/
+test-results/

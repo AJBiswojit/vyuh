@@ -7,13 +7,13 @@ import { cn } from '@/shared/lib/cn.js'
  * "Nothing here yet!" — the copy has to be actionable or it is not shipped.
  *
  * @param {Object} props
- * @param {string} title
- * @param {string} description
- * @param {string} [code]                 Mono line: a count, a filter, an empty-set code.
- * @param {React.ReactNode} [icon]
- * @param {React.ReactNode} [action]
- * @param {'inline'|'panel'} [size]       `panel` adds the surface and padding.
- * @param {string} [className]
+ * @param {string} props.title
+ * @param {string} props.description
+ * @param {string} [props.code]                 Mono line: a count, a filter, an empty-set code.
+ * @param {React.ReactNode} [props.icon]
+ * @param {React.ReactNode} [props.action]
+ * @param {'inline'|'panel'} [props.size]       `panel` adds the surface and padding.
+ * @param {string} [props.className]
  */
 export function EmptyState({ title, description, code, icon, action, size = 'inline', className }) {
   return (

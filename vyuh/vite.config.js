@@ -19,6 +19,12 @@ export default defineConfig({
     // sandboxed preview and local dev both load without a host check failure.
     allowedHosts: true,
     hmr: { clientPort: 443, protocol: 'wss' },
+    // Keep test/build artifacts out of the file watcher. Playwright writes
+    // traces and screenshots under .arena during e2e runs; without this, every
+    // artifact triggers a full page reload in the live preview.
+    watch: {
+      ignored: ['**/.arena/**', '**/test-results/**', '**/playwright-report/**', '**/dist/**', '**/coverage/**'],
+    },
   },
   preview: { host: '0.0.0.0', port: 4173, allowedHosts: true },
 })

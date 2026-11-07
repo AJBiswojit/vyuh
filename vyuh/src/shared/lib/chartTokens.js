@@ -22,7 +22,7 @@ function readVar(name) {
 
 /**
  * A palette for one chart, resolved for the current theme.
- * @returns {{ surface: string, grid: string, axisText: string, ember: string, idle: string, ink: string }}
+ * @returns {{ surface: string, grid: string, axisText: string, ember: string, idle: string, ink: string, answer: string, danger: string, review: string, info: string }}
  */
 export function readChartTokens() {
   return {
@@ -32,5 +32,9 @@ export function readChartTokens() {
     ember: readVar('--color-ember'),
     idle: readVar('--color-idle'),
     ink: readVar('--color-ink'),
+    answer: readVar('--color-answer'),
+    danger: readVar('--color-danger'),
+    review: readVar('--color-review'),
+    info: readVar('--color-info'),
   }
 }

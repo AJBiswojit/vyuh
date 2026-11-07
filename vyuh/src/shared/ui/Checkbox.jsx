@@ -1,5 +1,5 @@
 import { forwardRef, useId } from 'react'
-import { Check, Minus } from 'lucide-react'
+import { AlertCircle, Check, Minus } from 'lucide-react'
 import { cn } from '@/shared/lib/cn.js'
 
 /**
@@ -9,7 +9,8 @@ import { cn } from '@/shared/lib/cn.js'
  *
  * @typedef {Object} CheckboxProps
  * @property {string} label
- * @property {string} [description]
+ * @property {React.ReactNode} [description]
+ * @property {string} [error]
  * @property {boolean} [indeterminate]   Renders a dash; set via a ref effect.
  * @property {string} [className]
  */
@@ -18,9 +19,10 @@ import { cn } from '@/shared/lib/cn.js'
  * @param {CheckboxProps & React.ComponentPropsWithoutRef<'input'>} props
  * @param {React.Ref<HTMLInputElement>} ref
  */
-function CheckboxInner({ label, description, indeterminate = false, className, id, ...rest }, ref) {
+function CheckboxInner({ label, description, error, indeterminate = false, className, id, 'aria-describedby': externalDescribedBy, ...rest }, ref) {
   const generated = useId()
   const fieldId = id ?? generated
+  const describedBy = [description ? `${fieldId}-desc` : null, error ? `${fieldId}-error` : null, externalDescribedBy].filter(Boolean).join(' ') || undefined
 
   return (
     <div className={cn('flex items-start gap-3', className)}>
@@ -33,9 +35,11 @@ function CheckboxInner({ label, description, indeterminate = false, className, i
           }}
           id={fieldId}
           type="checkbox"
-          aria-describedby={description ? `${fieldId}-desc` : undefined}
+          aria-invalid={error ? true : undefined}
+          aria-describedby={describedBy}
           className={cn(
-            'peer size-5 cursor-pointer appearance-none rounded-xs border border-line-strong bg-surface-raised transition-colors',
+            'peer size-5 cursor-pointer appearance-none rounded-xs border bg-surface-raised transition-colors',
+            error ? 'border-danger-fg' : 'border-line-strong',
             'checked:border-heading checked:bg-heading indeterminate:border-heading indeterminate:bg-heading',
             'focus-visible:outline-2 focus-visible:outline-offset-2 focus-visible:outline-ember',
             'disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-sunken',
@@ -53,16 +57,22 @@ function CheckboxInner({ label, description, indeterminate = false, className, i
           aria-hidden="true"
         />
       </span>
-      <span className="min-w-0">
+      <div className="min-w-0 flex-1">
         <label htmlFor={fieldId} className="block cursor-pointer text-xs text-body">
           {label}
         </label>
         {description ? (
-          <p id={`${fieldId}-desc`} className="mt-0.5 text-2xs text-muted">
+          <p id={`${fieldId}-desc`} className="mt-1 text-xs leading-relaxed text-muted">
             {description}
           </p>
         ) : null}
-      </span>
+        {error ? (
+          <p id={`${fieldId}-error`} role="alert" className="mt-1 flex items-start gap-1.5 text-xs text-danger-fg">
+            <AlertCircle className="mt-0.5 size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
+            <span>{error}</span>
+          </p>
+        ) : null}
+      </div>
     </div>
   )
 }

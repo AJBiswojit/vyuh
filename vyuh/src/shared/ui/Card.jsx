@@ -13,6 +13,7 @@ import { cn } from '@/shared/lib/cn.js'
  *
  * @typedef {Object} CardProps
  * @property {string} [title]
+ * @property {boolean} [wrapTitle]     Let long paper names wrap instead of truncating.
  * @property {string} [eyebrow]         Mono label above the title.
  * @property {React.ReactNode} [action] Right-aligned header control.
  * @property {React.ReactNode} [footer]
@@ -35,7 +36,7 @@ const radii = { none: 'rounded-none', sm: 'rounded-sm', md: 'rounded-md' }
 /**
  * @param {CardProps & Omit<React.HTMLAttributes<HTMLElement>, 'title'>} props
  */
-export function Card({ title, eyebrow, action, footer, tone = 'paper', radius = 'md', as: Tag = 'section', className, children, ...rest }) {
+export function Card({ title, wrapTitle = false, eyebrow, action, footer, tone = 'paper', radius = 'md', as: Tag = 'section', className, children, ...rest }) {
   const ink = tone === 'ink'
 
   return (
@@ -54,7 +55,7 @@ export function Card({ title, eyebrow, action, footer, tone = 'paper', radius = 
               </p>
             ) : null}
             {title ? (
-              <h3 className={cn('truncate text-sm leading-snug tracking-tight', ink && 'text-paper')}>{title}</h3>
+              <h3 className={cn(wrapTitle ? 'text-pretty' : 'truncate', 'text-sm leading-snug tracking-tight', ink && 'text-paper')}>{title}</h3>
             ) : null}
           </div>
           {action ? <div className="shrink-0">{action}</div> : null}

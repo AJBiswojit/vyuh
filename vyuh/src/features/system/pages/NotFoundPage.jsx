@@ -12,7 +12,7 @@ export function NotFoundPage() {
   const location = useLocation()
 
   return (
-    <div className="flex min-h-dvh items-start justify-center px-4 py-16 sm:px-6">
+    <div className="flex min-h-[50vh] items-start justify-center px-4 py-16 sm:px-6">
       <div className="w-full max-w-xl">
           <p className="rule-label">404 · Not found</p>
           <h1 className="mt-3 text-3xl leading-tight tracking-tighter">That page is not part of this workspace.</h1>
@@ -24,10 +24,10 @@ export function NotFoundPage() {
               description="The link may be from an older term, or the page may have been renamed. Your papers and marks are unaffected."
               action={
                 <Link
-                  to="/app"
+                  to="/"
                   className="inline-flex min-h-11 items-center gap-2 rounded-sm bg-ink px-4 text-sm font-[560] text-paper transition-opacity hover:opacity-90"
                 >
-                  Go to your workspace
+                  Back to the overview
                 </Link>
               }
             />

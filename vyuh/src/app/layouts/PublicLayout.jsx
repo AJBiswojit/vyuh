@@ -20,14 +20,14 @@ export function PublicLayout({ children }) {
           <Logo to="/" />
           <nav aria-label="Primary" className="flex items-center gap-1">
             <Link
-              to="/sign-in"
+              to="/login"
               className="inline-flex min-h-[var(--spacing-touch)] items-center rounded-sm px-3 text-2xs font-[560] text-heading hover:bg-surface-sunken"
             >
               Sign in
             </Link>
             <ThemeToggle className="ml-1" compact />
             <Link
-              to="/sign-in"
+              to="/login"
               className="ml-1 hidden min-h-[var(--spacing-touch)] items-center rounded-sm border border-line-strong bg-surface-raised px-3 text-2xs font-[560] text-heading transition-colors hover:border-heading sm:inline-flex"
             >
               Open workspace

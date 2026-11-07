@@ -19,7 +19,7 @@
  *
  * @typedef {Object} DashboardSnapshot
  * @property {import('./user.js').Student} student
- * @property {import('./assessment.js').Test | null} nextTest
+ * @property {import('./student.js').Exam | null} nextTest
  * @property {import('./live.js').LiveSession[]} liveNow        Empty array is a valid, common state.
  * @property {import('./assessment.js').ScoreReport | null} lastReport
  * @property {import('./assessment.js').TrendPoint[]} trend           Last six mocks, oldest first.
@@ -28,6 +28,11 @@
  * @property {number} streakDays
  * @property {number} weeklyGoalPercent
  * @property {DailyStudyPoint[]} studyLog   Seven entries, oldest first.
+ * @property {import('./student.js').AttemptSummary[]} recentAttempts Last five, newest first.
+ * @property {import('./student.js').SubjectStrength[]} subjectStrength
+ * @property {import('./student.js').Recording | null} continueRecording
+ * @property {import('./live.js').LiveSession[]} schedule Today's upcoming classes.
+ * @property {import('./student.js').AttendanceSummary} attendance
  *
  * @typedef {Object} DailyStudyPoint
  * @property {string} day                   'Mon'.

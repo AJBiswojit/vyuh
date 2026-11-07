@@ -18,6 +18,10 @@
  * @property {string | null} scheduledFor   ISO 8601 datetime, null for untimed drills.
  * @property {import('./ids.js').SubjectId[]} subjectIds
  * @property {import('./ids.js').AttemptId | null} activeAttemptId
+ * @property {number} [sectionCount]
+ * @property {number} [negativeMarks]
+ * @property {string | null} [endsAt]
+ * @property {string[]} [instructions]
  *
  * @typedef {Object} QuestionOption
  * @property {'A'|'B'|'C'|'D'} key

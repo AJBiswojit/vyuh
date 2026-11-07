@@ -1,74 +1,112 @@
 import { useCallback, useEffect } from 'react'
-import { useMutation, useQuery, useQueryClient } from '@tanstack/react-query'
-import { queryKeys } from '@/app/providers/queryClient.js'
-import { services } from '@/shared/lib/services.js'
+import { useMutation, useQueryClient } from '@tanstack/react-query'
+import { useLocation, useNavigate } from 'react-router-dom'
+import { AuthService } from '@/services/AuthService.js'
 import { useSessionStore } from '@/shared/store/sessionStore.js'
+import { readPersistedSession, SESSION_STORAGE_KEY } from '@/shared/lib/sessionPersistence.js'
+import { useToast } from '@/shared/ui'
 
 /**
- * Session lifecycle. The identity is restored once per boot; sign-in and
- * sign-out are mutations that write through to the session store.
- *
- * The auth service is the one place a hook may call directly rather than
- * through a cached query, because guest state must not be cached.
+ * Restore once, expire at the absolute deadline, and follow logout in other tabs.
+ * No identity query is cached: clearing the session cannot be undone by a late
+ * restore or a stale TanStack Query result.
  */
 export function useSessionBootstrap() {
-  const status = useSessionStore((state) => state.status) // 'boot' until resolved
-  const setUser = useSessionStore((state) => state.setUser)
-  const markBooted = useSessionStore((state) => state.markBooted)
-
-  const { data, isPending, isError } = useQuery({
-    queryKey: queryKeys.session,
-    queryFn: () => services.auth.restore(),
-    staleTime: Infinity,
-    retry: 1,
-    enabled: status === 'boot',
-  })
+  const status = useSessionStore((state) => state.status)
+  const session = useSessionStore((state) => state.session)
+  const queryClient = useQueryClient()
 
   useEffect(() => {
-    if (!isPending && status === 'boot') {
-      if (data) setUser(data.user)
-      else markBooted()
+    let active = true
+    const store = useSessionStore.getState()
+    AuthService.getSession()
+      .then((restored) => {
+        if (!active) return
+        if (restored) store.setSession(restored)
+        else store.initialize()
+      })
+      .catch(() => { if (active) store.initialize() })
+    return () => { active = false }
+  }, [])
+
+  useEffect(() => {
+    if (!session) return
+    const expire = () => {
+      const current = useSessionStore.getState().session
+      if (current && current.expiresAt <= Date.now()) {
+        useSessionStore.getState().expire()
+        queryClient.clear()
+      }
     }
-  }, [data, isPending, status, setUser, markBooted])
+    // Cap the timeout to a signed 32-bit delay; recheck after long device sleep.
+    const delay = Math.min(Math.max(0, session.expiresAt - Date.now()), 2_147_483_647)
+    const timer = setTimeout(expire, delay)
+    const onVisibility = () => { if (document.visibilityState === 'visible') expire() }
+    document.addEventListener('visibilitychange', onVisibility)
+    window.addEventListener('focus', expire)
+    return () => {
+      clearTimeout(timer)
+      document.removeEventListener('visibilitychange', onVisibility)
+      window.removeEventListener('focus', expire)
+    }
+  }, [session, queryClient])
 
-  return { status, isError }
+  useEffect(() => {
+    /** @param {StorageEvent} event */
+    const onStorage = (event) => {
+      if (event.key !== SESSION_STORAGE_KEY && event.key !== null) return
+      const next = readPersistedSession()
+      const store = useSessionStore.getState()
+      if (!next) { store.clear(); queryClient.clear() }
+      else if (next.token !== store.session?.token) store.setSession(next)
+    }
+    window.addEventListener('storage', onStorage)
+    return () => window.removeEventListener('storage', onStorage)
+  }, [queryClient])
+
+  return { status }
 }
 
-/** @returns {{ signIn: (credentials: import('../../../contracts/user.js').Credentials) => void, isPending: boolean, error: (Error & { code?: string, message: string }) | null, reset: () => void }} */
-export function useSignIn() {
+/** Commit a validated session before navigating to a protected route. */
+export function useCommitSession() {
   const queryClient = useQueryClient()
-  const setUser = useSessionStore((state) => state.setUser)
-
-  const mutation = useMutation({
-    mutationFn: (/** @type {import('../../../contracts/user.js').Credentials} */ credentials) =>
-      services.auth.signIn(credentials),
-    onSuccess: (session) => {
-      setUser(session.user)
-      queryClient.setQueryData(queryKeys.session, session)
-    },
-  })
-
-  return {
-    signIn: mutation.mutate,
-    isPending: mutation.isPending,
-    error: /** @type {any} */ (mutation.error ?? null),
-    reset: mutation.reset,
-  }
+  const setSession = useSessionStore((state) => state.setSession)
+  return useCallback((/** @type {import('@/contracts/user.js').AuthSession} */ session) => {
+    queryClient.clear()
+    setSession(session)
+  }, [queryClient, setSession])
 }
 
-/** @returns {{ signOut: () => void, isPending: boolean }} */
-export function useSignOut() {
+export function useLogin() {
+  const commit = useCommitSession()
+  const mutation = useMutation({ mutationFn: AuthService.login, onSuccess: commit })
+  return { login: mutation.mutateAsync, isPending: mutation.isPending, error: mutation.error, reset: mutation.reset }
+}
+
+/** Local logout is authoritative, even if the HTTP revoke request fails. */
+export function useLogout() {
+  const navigate = useNavigate()
+  const mutation = useMutation({
+    mutationFn: AuthService.logout,
+    // Mark the navigation; the router-level cleanup clears identity only after
+    // the public landing route has committed. This avoids a RequireAuth race.
+    onSettled: () => navigate('/', { replace: true, state: { signedOut: true } }),
+  })
+  return { logout: () => mutation.mutateAsync().catch(() => {}), isPending: mutation.isPending }
+}
+
+/** Called once inside the router. Completes a logout after navigation commits. */
+export function useLogoutCleanup() {
+  const location = useLocation()
+  const navigate = useNavigate()
   const queryClient = useQueryClient()
   const clear = useSessionStore((state) => state.clear)
-
-  const mutation = useMutation({
-    mutationFn: () => services.auth.signOut(),
-    onSettled: () => {
-      clear()
-      queryClient.clear()
-    },
-  })
-
-  const signOut = useCallback(() => mutation.mutate(), [mutation])
-  return { signOut, isPending: mutation.isPending }
+  const toast = useToast()
+  useEffect(() => {
+    if (location.pathname !== '/' || !location.state?.signedOut) return
+    clear()
+    queryClient.clear()
+    toast.show({ title: 'Signed out', description: 'Your session has been cleared from this browser.', tone: 'success' })
+    navigate('/', { replace: true, state: null })
+  }, [location.pathname, location.state, clear, queryClient, toast, navigate])
 }

@@ -1,16 +1,16 @@
 import { useEffect, useState } from 'react'
 import { Link, NavLink, Outlet, useLocation } from 'react-router-dom'
 import { motion } from 'framer-motion'
-import { PanelLeftClose, PanelLeftOpen, Menu, X, ChevronRight } from 'lucide-react'
+import { PanelLeftClose, PanelLeftOpen, Menu, X, ChevronRight, LogOut } from 'lucide-react'
 import { cn } from '@/shared/lib/cn.js'
 import { durations, easeEntrance } from '@/shared/lib/motion.js'
 import { Logo } from '@/shared/ui/Logo.jsx'
 import { ThemeToggle } from '@/shared/ui/ThemeToggle.jsx'
 import { IconButton } from '@/shared/ui/IconButton.jsx'
-import { Kbd } from '@/shared/ui/Kbd.jsx'
 import { useUiStore } from '@/shared/store/uiStore.js'
 import { useSessionStore } from '@/shared/store/sessionStore.js'
-import { roleLabel } from '@/shared/lib/roles.js'
+import { homeRouteFor, roleLabel } from '@/shared/lib/roles.js'
+import { useLogout } from '@/features/auth/hooks/useSession.js'
 
 /**
  * WorkspaceLayout — the shell StudentLayout, FacultyLayout and AdminLayout all
@@ -28,7 +28,7 @@ import { roleLabel } from '@/shared/lib/roles.js'
  * @param {string} props.workspaceLabel
  * @param {React.ReactNode} [props.breadcrumb]
  * @param {string} [props.seatMeta]        Roll number or staff role, for the account chip.
- * @param {React.ReactNode} [children]
+ * @param {React.ReactNode} [props.children]
  */
 export function WorkspaceLayout({ items, workspaceLabel, breadcrumb, seatMeta, children }) {
   const railCollapsed = useUiStore((state) => state.railCollapsed)
@@ -38,6 +38,8 @@ export function WorkspaceLayout({ items, workspaceLabel, breadcrumb, seatMeta, c
   const user = useSessionStore((state) => state.user)
   const location = useLocation()
   const [announce, setAnnounce] = useState('')
+  const { logout, isPending: loggingOut } = useLogout()
+  const home = homeRouteFor(user?.role ?? 'student')
 
   // A route change must move a keyboard user into the new page, not leave them
   // in the rail. Focus the <main> and announce the new h1.
@@ -62,7 +64,7 @@ export function WorkspaceLayout({ items, workspaceLabel, breadcrumb, seatMeta, c
       >
         <div className="flex h-full flex-col border-r border-hairline-on-ink bg-ink text-paper">
           <div className={cn('flex h-[var(--spacing-topbar)] items-center border-b border-hairline-on-ink', railCollapsed ? 'justify-center px-2' : 'justify-between px-4')}>
-            <Logo to="/app" tone="paper" size="sm" withName={!railCollapsed} />
+            <Logo to={home} tone="paper" size="sm" withName={!railCollapsed} />
             {railCollapsed ? null : (
               <IconButton
                 icon={<PanelLeftClose strokeWidth={1.5} />}
@@ -99,7 +101,7 @@ export function WorkspaceLayout({ items, workspaceLabel, breadcrumb, seatMeta, c
                 <li key={item.to}>
                   <NavLink
                     to={item.to}
-                    end={item.to === '/app' || item.to === '/faculty' || item.to === '/admin'}
+                    end={item.to === home}
                     title={railCollapsed ? item.label : undefined}
                     aria-label={railCollapsed ? `${item.label} — ${item.description}` : undefined}
                     className={({ isActive }) =>
@@ -162,8 +164,8 @@ export function WorkspaceLayout({ items, workspaceLabel, breadcrumb, seatMeta, c
           />
           <div className="min-w-0 flex-1">{breadcrumb}</div>
           <div className="flex items-center gap-1.5">
-            <Kbd keys={['⌘', 'K']} aria-label="Search, command K" className="hidden md:inline-flex" />
             <ThemeToggle compact />
+            <IconButton icon={<LogOut strokeWidth={1.5} />} label={loggingOut ? 'Signing out' : 'Sign out'} onClick={() => logout()} disabled={loggingOut} />
             {user ? (
               <div className="flex items-center gap-2 rounded-sm border border-transparent py-1 pl-1.5">
                 <span className="grid size-8 place-items-center rounded-xs bg-ink text-2xs font-[600] tracking-wide text-paper">
@@ -213,7 +215,7 @@ export function WorkspaceLayout({ items, workspaceLabel, breadcrumb, seatMeta, c
             className="absolute inset-y-0 left-0 flex w-[min(20rem,86vw)] flex-col bg-ink text-paper shadow-[var(--shadow-overlay)]"
           >
             <div className="flex h-[var(--spacing-topbar)] items-center justify-between border-b border-hairline-on-ink px-4">
-              <Logo to="/app" tone="paper" size="sm" />
+              <Logo to={home} tone="paper" size="sm" />
               <IconButton
                 icon={<X strokeWidth={1.5} />}
                 label="Close navigation"
@@ -227,7 +229,7 @@ export function WorkspaceLayout({ items, workspaceLabel, breadcrumb, seatMeta, c
                   <li key={item.to}>
                     <NavLink
                       to={item.to}
-                      end={item.to === '/app' || item.to === '/faculty' || item.to === '/admin'}
+                      end={item.to === home}
                       onClick={() => setMobileNavOpen(false)}
                       className={({ isActive }) =>
                         cn(

@@ -1,10 +1,10 @@
-import { useNavigate } from 'react-router-dom'
 import { Check, LogOut, Monitor, Moon, Sun } from 'lucide-react'
 import { PageHeader } from '@/app/layouts/WorkspaceLayout.jsx'
 import { Badge } from '@/shared/ui/Badge.jsx'
 import { Button } from '@/shared/ui/Button.jsx'
 import { Card } from '@/shared/ui/Card.jsx'
-import { useToast } from '@/shared/ui/Toast.jsx'
+import { useTheme } from '@/app/providers/ThemeProvider.jsx'
+import { useLogout } from '@/features/auth/hooks/useSession.js'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle.js'
 import { useSessionStore } from '@/shared/store/sessionStore.js'
 import { useUiStore } from '@/shared/store/uiStore.js'
@@ -19,14 +19,11 @@ import { cn } from '@/shared/lib/cn.js'
  */
 export function AccountPage() {
   useDocumentTitle('Account')
-  const navigate = useNavigate()
   const user = useSessionStore((state) => state.user)
-  const clear = useSessionStore((state) => state.clear)
-  const theme = useUiStore((state) => state.theme)
-  const setTheme = useUiStore((state) => state.setTheme)
+  const { mode, setMode } = useTheme()
+  const { logout, isPending: loggingOut } = useLogout()
   const density = useUiStore((state) => state.density)
   const setDensity = useUiStore((state) => state.setDensity)
-  const toast = useToast()
 
   const themes = [
     { key: 'light', label: 'Paper', description: 'Ink text on paper surfaces', icon: Sun },
@@ -73,12 +70,12 @@ export function AccountPage() {
           <Card eyebrow="Appearance" title="Theme">
             <div className="grid grid-cols-2 gap-2">
               {themes.map((option) => {
-                const active = theme === option.key
+                const active = mode === option.key
                 return (
                   <button
                     key={option.key}
                     type="button"
-                    onClick={() => setTheme(/** @type {'light'|'dark'} */ (option.key))}
+                    onClick={() => setMode(option.key)}
                     aria-pressed={active}
                     className={cn(
                       'flex min-h-[5.5rem] flex-col items-start gap-2 rounded-sm border p-3 text-left transition-colors',
@@ -126,18 +123,15 @@ export function AccountPage() {
           <Card eyebrow="Session" title="Sign out of this device">
             <p className="text-xs leading-relaxed text-muted">
               {isMockMode
-                ? 'This demo build keeps the session in this tab only. Signing out clears it and returns to the overview.'
+                ? 'This demo keeps your session in this browser for eight hours. Signing out clears it immediately and returns to the landing page.'
                 : 'Signing out ends this session on this browser. Papers in progress keep their server-side clock and can be resumed from another device.'}
             </p>
             <Button
               className="mt-4"
               variant="secondary"
               icon={<LogOut strokeWidth={1.5} />}
-              onClick={() => {
-                clear()
-                toast.show({ title: 'Signed out', description: 'This tab no longer holds a session.' })
-                navigate('/', { replace: true })
-              }}
+              onClick={() => logout()}
+              loading={loggingOut}
             >
               Sign out
             </Button>

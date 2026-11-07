@@ -1,0 +1,49 @@
+WEBVTT
+
+1
+00:00:00.000 --> 00:00:04.000
+Start by choosing the axis. The hinge is convenient because the unknown hinge force passes through it.
+
+2
+00:00:04.000 --> 00:00:08.000
+Torque equals force times the perpendicular distance from the axis to the line of action.
+
+3
+00:00:08.000 --> 00:00:12.000
+Mark the weight at the centre of mass and draw the perpendicular moment arm before substituting.
+
+4
+00:00:12.000 --> 00:00:16.000
+Equilibrium asks for two conditions: net force is zero and net torque is zero.
+
+5
+00:00:16.000 --> 00:00:20.000
+Write the torque equation about the hinge so the hinge reaction drops out.
+
+6
+00:00:20.000 --> 00:00:24.000
+Keep signs consistent: anticlockwise positive, clockwise negative, for every term.
+
+7
+00:00:24.000 --> 00:00:28.000
+Now check a limiting case. If the ladder becomes vertical, the weight moment arm shrinks to zero.
+
+8
+00:00:28.000 --> 00:00:32.000
+A smaller moment arm means a smaller torque, even when the force itself is unchanged.
+
+9
+00:00:32.000 --> 00:00:36.000
+If your formula predicts more torque in that limit, recheck the geometry before the algebra.
+
+10
+00:00:36.000 --> 00:00:40.000
+Practice prompt: a uniform beam is hinged at one end and held by a vertical string at the other.
+
+11
+00:00:40.000 --> 00:00:44.000
+Find the string tension using torque about the hinge, then verify with the force equation.
+
+12
+00:00:44.000 --> 00:00:48.000
+Pause here, solve it in your notebook, and take the three-question check when the video ends.

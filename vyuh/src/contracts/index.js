@@ -37,6 +37,20 @@
  * @typedef {import('./dashboard.js').DailyStudyPoint} DailyStudyPoint
  * @typedef {import('./institute.js').InstituteProfile} InstituteProfile
  * @typedef {import('./institute.js').InstituteStat} InstituteStat
+ * @typedef {import('./analysis.js').ExamAnalysis} ExamAnalysis
+ * @typedef {import('./analysis.js').AnalysisDetails} AnalysisDetails
+ * @typedef {import('./analysis.js').QuestionAnalysis} QuestionAnalysis
+ * @typedef {import('./analysis.js').ReleasePolicy} ReleasePolicy
+ * @typedef {import('./analysis.js').TopicRevision} TopicRevision
+ * @typedef {import('./learning.js').AttendancePolicy} AttendancePolicy
+ * @typedef {import('./learning.js').LiveAttendanceState} LiveAttendanceState
+ * @typedef {import('./learning.js').AttendanceReport} AttendanceReport
+ * @typedef {import('./learning.js').LiveRoom} LiveRoom
+ * @typedef {import('./learning.js').RecordingDetail} RecordingDetail
+ * @typedef {import('./learning.js').PlaybackState} PlaybackState
+ * @typedef {import('./learning.js').DoubtThreadDetail} DoubtThreadDetail
+ * @typedef {import('./learning.js').StudyRoomDetail} StudyRoomDetail
+ * @typedef {import('./learning.js').LearningEvent} LearningEvent
  */
 
 export {};

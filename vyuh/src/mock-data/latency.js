@@ -89,11 +89,10 @@ export function simulate(produce, options = {}) {
         reject(error)
         return
       }
-      try {
-        resolve(structuredClone(produce()))
-      } catch (cause) {
-        reject(cause)
-      }
+      Promise.resolve()
+        .then(() => produce())
+        .then((value) => resolve(structuredClone(value)))
+        .catch(reject)
     }, delay)
   })
 }

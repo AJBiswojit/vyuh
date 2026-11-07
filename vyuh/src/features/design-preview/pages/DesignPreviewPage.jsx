@@ -161,7 +161,7 @@ export function DesignPreviewPage() {
             <Link to="/" className="text-2xs text-muted hover:text-heading">
               Landing
             </Link>
-            <Link to="/sign-in" className="text-2xs text-muted hover:text-heading">
+            <Link to="/login" className="text-2xs text-muted hover:text-heading">
               Sign in
             </Link>
           </div>
