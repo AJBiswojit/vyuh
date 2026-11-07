@@ -172,3 +172,49 @@ export function createMockRoomChannel(options) {
     stop() { if (timer !== null) clearTimer(timer); timer = null },
   }
 }
+
+/**
+ * A generic, injectable ticker. The monitor and the host console both need
+ * "one scripted event every N seconds"; both get it from here, so neither has to
+ * own a raw setTimeout and both stay drivable by fake timers in tests.
+ *
+ * @param {Object} options
+ * @param {number} options.intervalSeconds
+ * @param {(at: string) => void} options.onTick
+ * @param {() => number} [options.now]
+ * @param {(fn: () => void, ms: number) => number} [options.setTimer]
+ * @param {(id: number) => void} [options.clearTimer]
+ */
+export function createMockTicker({ intervalSeconds, onTick, now = Date.now, setTimer, clearTimer }) {
+  const schedule = setTimer ?? ((fn, ms) => Number(setTimeout(fn, ms)))
+  const cancel = clearTimer ?? ((id) => clearTimeout(id))
+  const seconds = Math.max(1, intervalSeconds)
+  /** @type {number | null} */
+  let timerId = null
+  let stopped = true
+
+  /** @param {() => void} fn */
+  function arm(fn) {
+    timerId = schedule(() => {
+      if (stopped) return
+      fn()
+      if (!stopped) arm(fn)
+    }, seconds * 1000)
+  }
+
+  return {
+    start() {
+      if (!stopped) return
+      stopped = false
+      arm(() => onTick(new Date(now()).toISOString()))
+    },
+    stop() {
+      stopped = true
+      if (timerId !== null) cancel(timerId)
+      timerId = null
+    },
+    get running() {
+      return !stopped
+    },
+  }
+}

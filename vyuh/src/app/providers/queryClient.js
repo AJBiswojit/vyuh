@@ -68,4 +68,70 @@ export const queryKeys = {
   studyRoomList(studentId) { return ['learning', 'study-rooms', studentId] },
   /** @param {string} roomId @param {string} studentId */
   studyRoom(roomId, studentId) { return ['learning', 'study-rooms', roomId, studentId] },
+
+  /* Phase 7 — faculty workspace. One namespace, then the domain. */
+  faculty: {
+    /** @param {string} facultyId */
+    dashboard(facultyId) { return ['faculty', facultyId, 'dashboard'] },
+    /** @param {string} facultyId @param {object} query */
+    bank(facultyId, query) { return ['faculty', facultyId, 'bank', query] },
+    /** @param {string} facultyId @param {string} questionId */
+    question(facultyId, questionId) { return ['faculty', facultyId, 'bank', questionId] },
+    /** @param {string} facultyId */
+    exams(facultyId) { return ['faculty', facultyId, 'exams'] },
+    /** @param {string} facultyId @param {string} examId */
+    exam(facultyId, examId) { return ['faculty', facultyId, 'exams', examId] },
+    /** @param {string} facultyId @param {string} examId */
+    examPreview(facultyId, examId) { return ['faculty', facultyId, 'exams', examId, 'preview'] },
+    /** @param {string} facultyId @param {string} examId */
+    monitor(facultyId, examId) { return ['faculty', facultyId, 'exams', examId, 'monitor'] },
+    /** @param {string} facultyId @param {string} examId */
+    itemAnalysis(facultyId, examId) { return ['faculty', facultyId, 'analysis', examId] },
+    /** @param {string} facultyId */
+    classes(facultyId) { return ['faculty', facultyId, 'classes'] },
+    /** @param {string} facultyId @param {string} sessionId */
+    hostConsole(facultyId, sessionId) { return ['faculty', facultyId, 'classes', sessionId, 'host'] },
+    /** @param {string} facultyId */
+    facultyRecordings(facultyId) { return ['faculty', facultyId, 'recordings'] },
+    /** @param {string} facultyId @param {string} recordingId */
+    facultyRecording(facultyId, recordingId) { return ['faculty', facultyId, 'recordings', recordingId] },
+    /** @param {string} facultyId @param {object} filter */
+    facultyAttendance(facultyId, filter) { return ['faculty', facultyId, 'attendance', filter] },
+    /** @param {string} facultyId @param {string} status */
+    facultyDoubts(facultyId, status) { return ['faculty', facultyId, 'doubts', status] },
+    /** @param {string} facultyId @param {string} doubtId */
+    facultyDoubt(facultyId, doubtId) { return ['faculty', facultyId, 'doubts', doubtId] },
+    /** @param {string} facultyId */
+    replyTemplates(facultyId) { return ['faculty', facultyId, 'reply-templates'] },
+  },
+
+  /* Phase 8 — institution console. One namespace, then the screen. */
+  admin: {
+    /** @param {string} adminId */
+    dashboard(adminId) { return ['admin', adminId, 'dashboard'] },
+    /** @param {string} adminId @param {object} query */
+    users(adminId, query) { return ['admin', adminId, 'users', query] },
+    /** @param {string} adminId */
+    batches(adminId) { return ['admin', adminId, 'batches'] },
+    /** @param {string} adminId @param {string} batchId */
+    batch(adminId, batchId) { return ['admin', adminId, 'batches', batchId] },
+    /** @param {string} adminId @param {string} status */
+    approvals(adminId, status) { return ['admin', adminId, 'approvals', status] },
+    /** @param {string} adminId */
+    policies(adminId) { return ['admin', adminId, 'policies'] },
+    /** @param {string} adminId @param {string} key @param {string|number} value */
+    policyImpact(adminId, key, value) { return ['admin', adminId, 'policies', key, 'impact', value] },
+    /** @param {string} adminId */
+    policyHistory(adminId) { return ['admin', adminId, 'policies', 'history'] },
+    /** @param {string} adminId */
+    integrityReports(adminId) { return ['admin', adminId, 'integrity'] },
+    /** @param {string} adminId @param {string} examId */
+    integrityReport(adminId, examId) { return ['admin', adminId, 'integrity', examId] },
+    /** @param {string} adminId @param {object} filter */
+    moderation(adminId, filter) { return ['admin', adminId, 'moderation', filter] },
+    /** @param {string} adminId @param {object} query */
+    audit(adminId, query) { return ['admin', adminId, 'audit', query] },
+    /** @param {string} adminId */
+    branding(adminId) { return ['admin', adminId, 'branding'] },
+  },
 }

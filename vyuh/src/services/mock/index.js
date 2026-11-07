@@ -12,6 +12,8 @@ import { examFlowService } from './examFlow.js'
 import { analysisService } from './analysis.js'
 import { learningService } from './learning.js'
 import { courseService, questionService } from './courses.js'
+import { facultyService } from './faculty.js'
+import { adminService } from './admin.js'
 
 /** @type {Services} */
 export const mockServices = {
@@ -28,6 +30,8 @@ export const mockServices = {
   examFlow: examFlowService,
   analysis: analysisService,
   learning: learningService,
+  faculty: facultyService,
+  admin: adminService,
 }
 
 export { demoAccounts }

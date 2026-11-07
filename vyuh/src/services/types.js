@@ -133,6 +133,85 @@
  * @property {(roomId:string,studentId:string)=>Promise<import('../contracts/learning.js').StudyRoomDetail>} leaveStudyRoom
  * @property {(roomId:string,studentId:string,listener:(event:import('../contracts/learning.js').LearningEvent)=>void)=>()=>void} subscribeRoom
  *
+ * ── Faculty workspace (Phase 7) ─────────────────────────────────────────
+ * Subscription methods are synchronous, like Phase 6's: they return an
+ * unsubscribe function so an effect can clean up on unmount.
+ * @typedef {Object} FacultyService
+ * @property {(facultyId: string) => Promise<import('../contracts/faculty.js').FacultyDashboard>} getDashboard
+ * @property {(facultyId: string, query?: import('../contracts/faculty.js').BankQuery) => Promise<import('../contracts/faculty.js').BankPage>} listBankQuestions
+ * @property {(facultyId: string, questionId: string) => Promise<import('../contracts/faculty.js').BankQuestion>} getBankQuestion
+ * @property {(facultyId: string, input: import('../contracts/faculty.js').QuestionInput) => Promise<import('../contracts/faculty.js').BankQuestion>} createBankQuestion
+ * @property {(facultyId: string, questionId: string, input: import('../contracts/faculty.js').QuestionInput) => Promise<import('../contracts/faculty.js').BankQuestion>} updateBankQuestion
+ * @property {(facultyId: string, questionId: string) => Promise<{ id: string, deletedAt: string }>} deleteBankQuestion
+ * @property {(facultyId: string) => Promise<import('../contracts/faculty.js').BankFacets>} listBankFacets
+ * @property {(facultyId: string, topicId: string) => Promise<string[]>} listSubtopics
+ * @property {() => Promise<import('../contracts/faculty.js').ExamPattern[]>} listExamPatterns
+ * @property {(facultyId: string) => Promise<import('../contracts/faculty.js').FacultyExam[]>} listExams
+ * @property {(facultyId: string, examId: string) => Promise<import('../contracts/faculty.js').FacultyExam>} getExam
+ * @property {(facultyId: string, input: { title: string, preset: import('../contracts/faculty.js').ExamPatternId }) => Promise<import('../contracts/faculty.js').FacultyExam>} createExam
+ * @property {(facultyId: string, examId: string, patch: Partial<import('../contracts/faculty.js').FacultyExam>) => Promise<import('../contracts/faculty.js').FacultyExam>} saveExam
+ * @property {(facultyId: string, examId: string, sectionId: string, questionId: string) => Promise<import('../contracts/faculty.js').FacultyExam>} addQuestionToExam
+ * @property {(facultyId: string, examId: string, sectionId: string, questionId: string) => Promise<import('../contracts/faculty.js').FacultyExam>} removeQuestionFromExam
+ * @property {(facultyId: string, examId: string, status: import('../contracts/faculty.js').FacultyExamStatus) => Promise<import('../contracts/faculty.js').FacultyExam>} setExamStatus
+ * @property {(facultyId: string, examId: string) => Promise<import('../contracts/faculty.js').ExamPreview>} getExamPreview
+ * @property {(facultyId: string, examId: string) => Promise<{ id: string, deletedAt: string }>} deleteExam
+ * @property {(facultyId: string, examId: string) => Promise<import('../contracts/faculty.js').MonitorSnapshot>} getMonitor
+ * @property {(facultyId: string, examId: string, listener: (snapshot: import('../contracts/faculty.js').MonitorSnapshot) => void) => () => void} subscribeMonitor
+ * @property {(facultyId: string, examId: string) => Promise<import('../contracts/faculty.js').ItemAnalysis>} getItemAnalysis
+ * @property {(facultyId: string, examId: string, questionId: string) => Promise<import('../contracts/faculty.js').ItemAnalysis>} markQuestionFaulty
+ * @property {(facultyId: string, examId: string, questionId: string) => Promise<import('../contracts/faculty.js').ItemAnalysis>} restoreQuestion
+ * @property {(facultyId: string) => Promise<import('../contracts/faculty.js').FacultyClass[]>} listClasses
+ * @property {(facultyId: string, input: import('../contracts/faculty.js').ClassInput) => Promise<import('../contracts/faculty.js').FacultyClass>} createClass
+ * @property {(facultyId: string, sessionId: string) => Promise<{ id: string, cancelledAt: string }>} cancelClass
+ * @property {(facultyId: string, sessionId: string) => Promise<import('../contracts/faculty.js').HostConsole>} getHostConsole
+ * @property {(facultyId: string, sessionId: string) => Promise<import('../contracts/faculty.js').HostConsole>} startSession
+ * @property {(facultyId: string, sessionId: string) => Promise<import('../contracts/faculty.js').HostConsole>} endSession
+ * @property {(facultyId: string, sessionId: string) => Promise<import('../contracts/faculty.js').HostConsole>} triggerAttentionCheck
+ * @property {(facultyId: string, sessionId: string, studentId: string, muted: boolean) => Promise<import('../contracts/faculty.js').HostConsole>} setParticipantMuted
+ * @property {(facultyId: string, sessionId: string, messageId: string) => Promise<import('../contracts/faculty.js').HostConsole>} hideChatMessage
+ * @property {(facultyId: string, sessionId: string, questionId: string) => Promise<import('../contracts/faculty.js').HostConsole>} approveQueueQuestion
+ * @property {(facultyId: string, sessionId: string, listener: (console: import('../contracts/faculty.js').HostConsole) => void) => () => void} subscribeHost
+ * @property {(facultyId: string) => Promise<import('../contracts/faculty.js').FacultyRecording[]>} listRecordings
+ * @property {(facultyId: string, recordingId: string) => Promise<import('../contracts/faculty.js').FacultyRecording>} getRecording
+ * @property {(facultyId: string, input: import('../contracts/faculty.js').RecordingInput) => Promise<import('../contracts/faculty.js').FacultyRecording>} createRecording
+ * @property {(facultyId: string, recordingId: string, patch: Partial<import('../contracts/faculty.js').FacultyRecording>) => Promise<import('../contracts/faculty.js').FacultyRecording>} saveRecording
+ * @property {(facultyId: string, recordingId: string) => Promise<{ id: string, deletedAt: string }>} deleteRecording
+ * @property {(facultyId: string, filter?: { batchId?: string, defaultersOnly?: boolean }) => Promise<import('../contracts/faculty.js').AttendanceReport>} getAttendanceReport
+ * @property {(facultyId: string, filter?: { batchId?: string, defaultersOnly?: boolean }) => Promise<import('../contracts/faculty.js').AttendanceExport>} exportAttendance
+ * @property {(facultyId: string, filter?: { status?: 'all'|'open'|'answered'|'resolved' }) => Promise<import('../contracts/faculty.js').FacultyDoubt[]>} listDoubts
+ * @property {(facultyId: string, doubtId: string) => Promise<import('../contracts/faculty.js').FacultyDoubt>} getDoubt
+ * @property {(facultyId: string, doubtId: string, body: string) => Promise<import('../contracts/faculty.js').FacultyDoubt>} replyDoubt
+ * @property {(facultyId: string, doubtId: string) => Promise<import('../contracts/faculty.js').FacultyDoubt>} resolveDoubt
+ * @property {(facultyId: string) => Promise<import('../contracts/faculty.js').ReplyTemplate[]>} listReplyTemplates
+ *
+ * ── Admin (Phase 8) ─────────────────────────────────────────────────────
+ * The academic office reads across batches and writes a decision trail. Every
+ * mutating method appends to the same audit ledger the audit screen reads.
+ * @typedef {Object} AdminService
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').AdminDashboard>} getDashboard
+ * @property {(adminId: string, query?: import('../contracts/admin.js').UserQuery) => Promise<import('../contracts/admin.js').UserPage>} listUsers
+ * @property {() => Promise<{ fields: import('../contracts/admin.js').ImportField[], aliases: Record<string,string[]>, samples: Record<string, { label: string, fileName: string, description: string, csv: string }>, maxRows: number, fileName: string }>} getImportTemplate
+ * @property {(adminId: string, input: { csv: string, mapping: Record<string,string>, fixes?: Record<number, Record<string,string>>, skipped?: number[] }) => Promise<import('../contracts/admin.js').ImportPreview>} previewImport
+ * @property {(adminId: string, input: { csv: string, mapping: Record<string,string>, fixes?: Record<number, Record<string,string>>, skipped?: number[], fileName?: string }) => Promise<import('../contracts/admin.js').ImportCommitResult>} commitImport
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').AdminBatch[]>} listAdminBatches
+ * @property {(adminId: string, batchId: string) => Promise<import('../contracts/admin.js').BatchDetail>} getAdminBatch
+ * @property {(adminId: string, batchId: string, facultyIds: string[]) => Promise<import('../contracts/admin.js').AdminBatch>} saveBatchFaculty
+ * @property {(adminId: string, filter?: { status?: 'all'|'pending'|'approved'|'rejected' }) => Promise<import('../contracts/admin.js').ApprovalItem[]>} listApprovals
+ * @property {(adminId: string, examId: string, input: import('../contracts/admin.js').ApprovalDecisionInput) => Promise<import('../contracts/admin.js').ApprovalItem>} decideApproval
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').PolicyDefinition[]>} listPolicies
+ * @property {(adminId: string, key: string, value: string|number) => Promise<import('../contracts/admin.js').PolicyImpact>} getPolicyImpact
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').PolicyChange[]>} listPolicyHistory
+ * @property {(adminId: string, input: { key: string, value: string|number, note?: string }) => Promise<import('../contracts/admin.js').PolicyDefinition>} updatePolicy
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').IntegrityReport[]>} listIntegrityReports
+ * @property {(adminId: string, examId: string) => Promise<import('../contracts/admin.js').IntegrityReport>} getIntegrityReport
+ * @property {(adminId: string, input: { examId: string, sessionId: string, decision: import('../contracts/admin.js').IntegrityDecision, note: string }) => Promise<import('../contracts/admin.js').IntegrityReport>} decideIntegrity
+ * @property {(adminId: string, request: import('../contracts/admin.js').ReportRequest) => Promise<import('../contracts/admin.js').ReportResult>} runReport
+ * @property {(adminId: string, filter?: { kind?: 'all'|'doubt'|'chat', status?: 'all'|import('../contracts/admin.js').ModerationStatus }) => Promise<import('../contracts/admin.js').ModerationItem[]>} listModeration
+ * @property {(adminId: string, input: { id: string, decision: 'remove'|'dismiss'|'warn', note?: string }) => Promise<import('../contracts/admin.js').ModerationItem>} decideModeration
+ * @property {(adminId: string, query?: import('../contracts/admin.js').AuditQuery) => Promise<import('../contracts/admin.js').AuditPage>} listAudit
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').Branding>} getBranding
+ * @property {(adminId: string, input: Partial<import('../contracts/admin.js').Branding>) => Promise<import('../contracts/admin.js').Branding>} saveBranding
+ *
  * @typedef {Object} Services
  * @property {AuthService} auth
  * @property {LandingService} landing
@@ -147,6 +226,8 @@
  * @property {ExamFlowService} examFlow
  * @property {AnalysisService} analysis
  * @property {LearningService} learning
+ * @property {FacultyService} faculty
+ * @property {AdminService} admin
  */
 
 export {};

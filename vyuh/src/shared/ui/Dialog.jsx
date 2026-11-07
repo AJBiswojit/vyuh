@@ -44,15 +44,21 @@ export function Dialog({
   const headingId = useId()
   const descriptionId = useId()
 
+  // Callers pass an inline onClose. Keeping it in a ref means the modal is set up
+  // once per open, not once per render — otherwise every keystroke in a dialog
+  // would re-run trapFocus and pull the caret back to the first control.
+  const onCloseRef = useRef(onClose)
+  onCloseRef.current = onClose
+
   useEffect(() => {
     if (!open) return
     const releaseScroll = lockScroll()
-    const releaseFocus = trapFocus(panelRef.current, { onClose })
+    const releaseFocus = trapFocus(panelRef.current, { onClose: () => onCloseRef.current() })
     return () => {
       releaseFocus()
       releaseScroll()
     }
-  }, [open, onClose])
+  }, [open])
 
   return createPortal(
     <AnimatePresence>
