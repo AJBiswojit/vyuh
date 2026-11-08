@@ -45,8 +45,16 @@ export function usePerformance(studentId) {
   })
 }
 
-export function useRecordings() {
-  return useQuery({ queryKey: queryKeys.recordings, queryFn: () => services.live.listRecordings() })
+/* BATCH 3.1 (WS10): this latent reader was globally keyed and unscoped. It now
+ * carries the signed-in student's identity into BOTH the query key and the
+ * service call, so an issued account can never read a demo cache entry. */
+/** @param {string | undefined} studentId */
+export function useRecordings(studentId) {
+  return useQuery({
+    queryKey: [...queryKeys.recordings, studentId ?? 'unknown'],
+    queryFn: () => services.live.listRecordings(studentId),
+    enabled: Boolean(studentId),
+  })
 }
 
 /** @param {string | undefined} studentId */
@@ -109,5 +117,5 @@ export function useUpdatePreferences(studentId) {
 
 /** @param {string | undefined} studentId */
 export function useUpcomingSessions(studentId) {
-  return useQuery({ queryKey: [...queryKeys.liveSessions, studentId ?? 'current'], queryFn: () => services.live.listUpcoming(), enabled: Boolean(studentId) })
+  return useQuery({ queryKey: [...queryKeys.liveSessions, studentId ?? 'current'], queryFn: () => services.live.listUpcoming(studentId), enabled: Boolean(studentId) })
 }

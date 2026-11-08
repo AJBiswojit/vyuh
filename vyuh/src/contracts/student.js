@@ -7,7 +7,8 @@
  * @typedef {import('./assessment.js').SubjectScore} SubjectScore
  * @typedef {import('./live.js').LiveSession} LiveSession
  *
- * @typedef {Test & { sectionCount: number, negativeMarks: number, endsAt: string | null, instructions: string[] }} Exam
+ * @typedef {Test & { sectionCount: number, negativeMarks: number, endsAt: string | null, instructions: string[],
+ *   playable?: boolean, resultMode?: 'question_level'|'score_summary'|'unpublished', unavailableReason?: string | null }} Exam
  *
  * @typedef {Object} AttemptSummary
  * @property {string} id

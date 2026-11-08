@@ -1,8 +1,16 @@
 import { afterEach, beforeEach, describe, expect, it, vi } from 'vitest'
 import { learningService } from '../../src/services/mock/learning.js'
 import { attendanceReportSchema, liveRoomSchema, recordingDetailSchema } from '../../src/services/api/schemas.js'
+import { signInDemoStudent } from '../helpers/workspaceIdentity.js'
 
-beforeEach(() => { localStorage.clear(); vi.useFakeTimers() })
+/* BATCH 3.2: legacy `stu-*` fixture ids are no longer identities. Every call
+ * now uses the recognized demo seat WITH a real, valid, matching demo session
+ * (signed in before fake timers are installed). No test-ID allowlist exists. */
+beforeEach(async () => {
+  localStorage.clear()
+  await signInDemoStudent()
+  vi.useFakeTimers()
+})
 afterEach(() => vi.useRealTimers())
 
 /** Mock transport latency is timer-based; advance it without waiting in real time. */
@@ -17,14 +25,14 @@ describe('live attendance service', () => {
     localStorage.setItem('vyuh.mock.attentionMaxSeconds', '1')
     localStorage.setItem('vyuh.mock.presenceTickSeconds', '60')
     localStorage.setItem('vyuh.mock.chatIntervalSeconds', '60')
-    const joined = await settle(learningService.joinLive('ses-rot-b', 'stu-test'))
+    const joined = await settle(learningService.joinLive('ses-rot-b', 'stu-ananya'))
     expect(joined.presencePercent).toBe(84)
     const events = []
-    const off = learningService.subscribe('ses-rot-b', 'stu-test', (event) => events.push(event))
+    const off = learningService.subscribe('ses-rot-b', 'stu-ananya', (event) => events.push(event))
     await vi.advanceTimersByTimeAsync(1000)
     const challenge = events.find((event) => event.type === 'attention-challenge')
     expect(challenge).toBeTruthy()
-    const answered = await settle(learningService.respondAttention('ses-rot-b', 'stu-test', challenge.challenge.id))
+    const answered = await settle(learningService.respondAttention('ses-rot-b', 'stu-ananya', challenge.challenge.id))
     expect(answered.presencePercent).toBe(86)
     expect(answered.responses.at(-1)).toMatchObject({ outcome: 'answered', delta: 2 })
     off()
@@ -34,9 +42,9 @@ describe('live attendance service', () => {
     localStorage.setItem('vyuh.mock.attentionMaxSeconds', '1')
     localStorage.setItem('vyuh.mock.presenceTickSeconds', '60')
     localStorage.setItem('vyuh.mock.chatIntervalSeconds', '60')
-    await settle(learningService.joinLive('ses-rot-b', 'stu-miss'))
+    await settle(learningService.joinLive('ses-rot-b', 'stu-ananya'))
     const events = []
-    const off = learningService.subscribe('ses-rot-b', 'stu-miss', (event) => events.push(event))
+    const off = learningService.subscribe('ses-rot-b', 'stu-ananya', (event) => events.push(event))
     await vi.advanceTimersByTimeAsync(1000)
     await vi.advanceTimersByTimeAsync(15000)
     const presence = events.filter((event) => event.type === 'presence').at(-1)
@@ -45,68 +53,68 @@ describe('live attendance service', () => {
     off()
   })
   it('resumes the same register after leaving and rejoining', async () => {
-    await settle(learningService.joinLive('ses-rot-b', 'stu-rejoin'))
-    const left = await settle(learningService.leaveLive('ses-rot-b', 'stu-rejoin'))
+    await settle(learningService.joinLive('ses-rot-b', 'stu-ananya'))
+    const left = await settle(learningService.leaveLive('ses-rot-b', 'stu-ananya'))
     expect(left.connected).toBe(false)
-    const rejoined = await settle(learningService.joinLive('ses-rot-b', 'stu-rejoin'))
+    const rejoined = await settle(learningService.joinLive('ses-rot-b', 'stu-ananya'))
     expect(rejoined.connected).toBe(true)
     expect(rejoined.joinedAt).toBe(left.joinedAt)
   })
   it('toggles an upvote without double-counting the base total', async () => {
-    const before = await settle(learningService.getLiveRoom('ses-rot-b', 'stu-voter'))
+    const before = await settle(learningService.getLiveRoom('ses-rot-b', 'stu-ananya'))
     const question = before.queue.find((item) => item.id === 'q-live-2')
-    const up = await settle(learningService.upvoteQuestion('ses-rot-b', question.id, 'stu-voter'))
+    const up = await settle(learningService.upvoteQuestion('ses-rot-b', question.id, 'stu-ananya'))
     expect(up.upvotes).toBe(question.upvotes + 1)
     expect(up.votedByMe).toBe(true)
-    const down = await settle(learningService.upvoteQuestion('ses-rot-b', question.id, 'stu-voter'))
+    const down = await settle(learningService.upvoteQuestion('ses-rot-b', question.id, 'stu-ananya'))
     expect(down.upvotes).toBe(question.upvotes)
     expect(down.votedByMe).toBe(false)
   })
   it('validates the room and attendance report at the API boundary', async () => {
-    const room = await settle(learningService.getLiveRoom('ses-rot-b', 'stu-schema'))
+    const room = await settle(learningService.getLiveRoom('ses-rot-b', 'stu-ananya'))
     expect(liveRoomSchema.safeParse(room).success).toBe(true)
-    const report = await settle(learningService.getAttendance('stu-schema'))
+    const report = await settle(learningService.getAttendance('stu-ananya'))
     expect(attendanceReportSchema.safeParse(report).success).toBe(true)
   })
 })
 
 describe('playback, doubts and rooms', () => {
   it('persists resume and speed across a fresh read, and locks the quiz until ended', async () => {
-    await settle(learningService.savePlayback('rec-int-c', 'stu-play', { positionSeconds: 14.5, watchedThroughSeconds: 14.5, speed: 1.5, ended: false }))
-    const refreshed = await settle(learningService.getRecording('rec-int-c', 'stu-play'))
+    await settle(learningService.savePlayback('rec-int-c', 'stu-ananya', { positionSeconds: 14.5, watchedThroughSeconds: 14.5, speed: 1.5, ended: false }))
+    const refreshed = await settle(learningService.getRecording('rec-int-c', 'stu-ananya'))
     expect(refreshed.playback.positionSeconds).toBe(14.5)
     expect(refreshed.playback.speed).toBe(1.5)
     expect(refreshed.playback.completedChapterIds).toEqual(['int-ch-1'])
-    const locked = learningService.submitQuiz('rec-int-c', 'stu-play', {})
+    const locked = learningService.submitQuiz('rec-int-c', 'stu-ananya', {})
     const assertion = expect(locked).rejects.toMatchObject({ code: 'practice_locked' })
     await vi.advanceTimersByTimeAsync(1000)
     await assertion
-    await settle(learningService.savePlayback('rec-int-c', 'stu-play', { positionSeconds: 48, watchedThroughSeconds: 48, speed: 1.5, ended: true }))
-    const quiz = await settle(learningService.submitQuiz('rec-int-c', 'stu-play', { 'int-q1': 'B', 'int-q2': 'B', 'int-q3': 'B' }))
+    await settle(learningService.savePlayback('rec-int-c', 'stu-ananya', { positionSeconds: 48, watchedThroughSeconds: 48, speed: 1.5, ended: true }))
+    const quiz = await settle(learningService.submitQuiz('rec-int-c', 'stu-ananya', { 'int-q1': 'B', 'int-q2': 'B', 'int-q3': 'B' }))
     expect(quiz.score).toBe(3)
   })
   it('does not complete chapters when the student merely seeks to the end', async () => {
-    await settle(learningService.savePlayback('rec-int-c', 'stu-seek', { positionSeconds: 48, watchedThroughSeconds: 0, speed: 1, ended: false }))
-    const recording = await settle(learningService.getRecording('rec-int-c', 'stu-seek'))
+    await settle(learningService.savePlayback('rec-int-c', 'stu-ananya', { positionSeconds: 48, watchedThroughSeconds: 0, speed: 1, ended: false }))
+    const recording = await settle(learningService.getRecording('rec-int-c', 'stu-ananya'))
     expect(recording.playback.completedChapterIds).toEqual([])
     expect(recording.playback.ended).toBe(false)
     expect(recordingDetailSchema.safeParse(recording).success).toBe(true)
   })
   it('attaches a doubt to a recording timestamp and keeps the thread reply', async () => {
-    const doubt = await settle(learningService.createDoubt({ studentId: 'stu-doubt', title: 'Why swap limits?', body: 'I get a sign error.', recordingId: 'rec-int-c', timeSeconds: 16 }))
+    const doubt = await settle(learningService.createDoubt({ studentId: 'stu-ananya', title: 'Why swap limits?', body: 'I get a sign error.', recordingId: 'rec-int-c', timeSeconds: 16 }))
     expect(doubt.timeSeconds).toBe(16)
     expect(doubt.status).toBe('open')
-    const replied = await settle(learningService.replyDoubt(doubt.id, 'stu-doubt', 'Adding the substitution I used.'))
+    const replied = await settle(learningService.replyDoubt(doubt.id, 'stu-ananya', 'Adding the substitution I used.'))
     expect(replied.messages).toHaveLength(2)
-    const inbox = await settle(learningService.listDoubts('stu-doubt'))
+    const inbox = await settle(learningService.listDoubts('stu-ananya'))
     expect(inbox.some((item) => item.id === doubt.id)).toBe(true)
   })
   it('joins and leaves an interactive room with a self participant', async () => {
-    const joined = await settle(learningService.joinStudyRoom('room-torque', 'stu-room'))
+    const joined = await settle(learningService.joinStudyRoom('room-torque', 'stu-ananya'))
     expect(joined.joined).toBe(true)
     expect(joined.participants.some((person) => person.isSelf)).toBe(true)
     expect(joined.peerCount).toBe(6)
-    const left = await settle(learningService.leaveStudyRoom('room-torque', 'stu-room'))
+    const left = await settle(learningService.leaveStudyRoom('room-torque', 'stu-ananya'))
     expect(left.joined).toBe(false)
     expect(left.peerCount).toBe(5)
   })

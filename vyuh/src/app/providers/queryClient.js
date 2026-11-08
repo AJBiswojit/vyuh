@@ -133,5 +133,8 @@ export const queryKeys = {
     audit(adminId, query) { return ['admin', adminId, 'audit', query] },
     /** @param {string} adminId */
     branding(adminId) { return ['admin', adminId, 'branding'] },
+    /* Batch 3 — Admin People. Credential values are NEVER stored under a query key. */
+    /** @param {string} adminId */
+    instituteIdConfig(adminId) { return ['admin', adminId, 'institute-id-config'] },
   },
 }

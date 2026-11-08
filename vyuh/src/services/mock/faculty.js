@@ -36,6 +36,7 @@ import {
   monitorCounts, summarizeItems, toCsv,
 } from '../../shared/lib/facultyMath.js'
 import { notFound, serviceError } from './errors.js'
+import { requireFacultyWorkspace, demoFacultyWorkspace } from './ownWorkspace.js'
 
 const VERSION = 1
 const DEFAULT_PAGE_SIZE = 25
@@ -132,7 +133,27 @@ function numericFlag(key, fallback) {
 }
 
 /** @param {string} facultyId */
+/**
+ * BATCH 3 (U-3) — an institute-issued faculty member is a real account with a
+ * real name and an EMPTY workspace. Demo fixtures belong to the demo seat only.
+ * @returns {import('../../contracts/user.js').InstituteAccount | null}
+ */
+function issuedFaculty(facultyId) {
+  /* BATCH 3.2 (F-01 / F-02): throws `not_found` for unknown, forged,
+     sessionless, wrong-role and mismatched faculty identities. */
+  const scope = requireFacultyWorkspace(facultyId)
+  return scope.kind === 'issued' ? scope.record : null
+}
+
+function isOwnFacultyWorkspace(facultyId) {
+  return !demoFacultyWorkspace(facultyId)
+}
+
 function facultyName(facultyId) {
+  /* issuedFaculty validates the identity first; an invalid id never falls
+     back to the seeded faculty profile. */
+  const record = issuedFaculty(facultyId)
+  if (record) return record.name
   return facultyId === facultyProfile.id ? facultyProfile.name : 'Faculty member'
 }
 
@@ -144,7 +165,10 @@ function composeBank(facultyId) {
   const deleted = new Set(store.questions.deleted)
   /** @type {Map<string, BankQuestion>} */
   const map = new Map()
-  for (const question of questionBank) map.set(question.id, question)
+  /* U-3: issued faculty see only what they author, never the demo bank. */
+  if (!isOwnFacultyWorkspace(facultyId)) {
+    for (const question of questionBank) map.set(question.id, question)
+  }
   for (const question of store.questions.created) map.set(question.id, question)
   for (const [id, patch] of Object.entries(store.questions.updated)) {
     const current = map.get(id)
@@ -297,7 +321,10 @@ function composeExams(facultyId) {
   const deleted = new Set(store.exams.deleted)
   /** @type {Map<string, FacultyExam>} */
   const map = new Map()
-  for (const exam of facultyExams) map.set(exam.id, exam)
+  /* U-3: issued faculty see only papers they author. */
+  if (!isOwnFacultyWorkspace(facultyId)) {
+    for (const exam of facultyExams) map.set(exam.id, exam)
+  }
   for (const exam of store.exams.created) map.set(exam.id, exam)
   for (const [id, patch] of Object.entries(store.exams.saved)) {
     const current = map.get(id)
@@ -649,17 +676,26 @@ export const facultyService = {
       const bank = composeBank(facultyId)
       const exams = composeExams(facultyId)
       const dashboard = clone(facultyDashboard)
+      /* U-3: an institute-issued faculty sees a real name and an EMPTY desk —
+         no demo classes, doubts, approvals, papers or invented counters. */
+      const own = isOwnFacultyWorkspace(facultyId)
+      const zeroedStats = Object.fromEntries(Object.keys(dashboard.stats).map((key) => [key, 0]))
       return {
         ...dashboard,
         facultyId,
         facultyName: facultyName(facultyId),
-        stats: {
-          ...dashboard.stats,
-          bankQuestions: bank.length,
-          drafts: exams.filter((exam) => exam.status === 'draft').length,
-          scheduled: exams.filter((exam) => exam.status === 'scheduled' || exam.status === 'live').length,
-          awaitingApproval: exams.filter((exam) => exam.status === 'pending_approval').length,
-        },
+        todayClasses: own ? [] : dashboard.todayClasses,
+        pendingDoubts: own ? [] : dashboard.pendingDoubts,
+        approvals: own ? [] : dashboard.approvals,
+        stats: own
+          ? { ...zeroedStats }
+          : {
+              ...dashboard.stats,
+              bankQuestions: bank.length,
+              drafts: exams.filter((exam) => exam.status === 'draft').length,
+              scheduled: exams.filter((exam) => exam.status === 'scheduled' || exam.status === 'live').length,
+              awaitingApproval: exams.filter((exam) => exam.status === 'pending_approval').length,
+            },
       }
     })
   },
@@ -900,7 +936,8 @@ export const facultyService = {
     return simulate(() => {
       const store = readStore(facultyId)
       const cancelled = new Set(store.classes.cancelled)
-      return [...store.classes.created, ...facultyClasses].map((session) =>
+      /* U-3: issued faculty see only classes they schedule. */
+      return [...store.classes.created, ...(isOwnFacultyWorkspace(facultyId) ? [] : facultyClasses)].map((session) =>
         cancelled.has(session.id) ? { ...session, status: /** @type {const} */ ('cancelled') } : session,
       )
     })
@@ -1062,7 +1099,10 @@ export const facultyService = {
       const deleted = new Set(store.recordings.deleted)
       /** @type {Map<string, FacultyRecording>} */
       const map = new Map()
-      for (const recording of facultyRecordings) map.set(recording.id, recording)
+      /* U-3: issued faculty see only recordings they add. */
+      if (!isOwnFacultyWorkspace(facultyId)) {
+        for (const recording of facultyRecordings) map.set(recording.id, recording)
+      }
       for (const recording of store.recordings.created) map.set(recording.id, recording)
       for (const [id, patch] of Object.entries(store.recordings.saved)) {
         const current = map.get(id)
@@ -1140,6 +1180,18 @@ export const facultyService = {
   getAttendanceReport(facultyId, filter) {
     return simulate(() => {
       const batchId = filter?.batchId ?? 'bat-neet-12'
+      /* U-3: an issued faculty has no demo attendance register. */
+      if (isOwnFacultyWorkspace(facultyId)) {
+        return {
+          periodLabel: attendancePeriod.label,
+          thresholdPercent: 75,
+          batchId,
+          batchName: '',
+          rows: [],
+          summary: { students: 0, defaulters: 0, averagePercent: 0, sessionsHeld: 0 },
+          updatedAt: new Date().toISOString(),
+        }
+      }
       const rows = attendanceRows
         .filter((row) => !batchId || row.batchId === batchId)
         .filter((row) => (filter?.defaultersOnly ? row.defaulter : true))
@@ -1163,8 +1215,9 @@ export const facultyService = {
   },
   exportAttendance(facultyId, filter) {
     return simulate(() => {
+      /* U-3: never export the demo register under a real faculty's name. */
       const report = {
-        rows: attendanceRows
+        rows: isOwnFacultyWorkspace(facultyId) ? [] : attendanceRows
           .filter((row) => !filter?.batchId || row.batchId === filter.batchId)
           .filter((row) => (filter?.defaultersOnly ? row.defaulter : true)),
       }
@@ -1186,7 +1239,8 @@ export const facultyService = {
   listDoubts(facultyId, filter) {
     return simulate(() => {
       const store = readStore(facultyId)
-      const doubts = facultyDoubts.map((doubt) => {
+      /* U-3: issued faculty do not inherit the demo doubt inbox. */
+      const doubts = (isOwnFacultyWorkspace(facultyId) ? [] : facultyDoubts).map((doubt) => {
         const replies = store.doubts.replies[doubt.id] ?? []
         const status = store.doubts.status[doubt.id] ?? doubt.status
         return { ...doubt, messages: [...doubt.messages, ...replies], status }
@@ -1195,8 +1249,9 @@ export const facultyService = {
       return doubts.filter((doubt) => (status === 'all' ? true : status === 'open' ? doubt.status !== 'resolved' : doubt.status === status))
     })
   },
-  getDoubt(facultyId, doubtId) {
+    getDoubt(facultyId, doubtId) {
     return simulate(() => {
+      if (isOwnFacultyWorkspace(facultyId)) throw notFound('doubt')
       const store = readStore(facultyId)
       const doubt = facultyDoubts.find((item) => item.id === doubtId)
       if (!doubt) throw notFound('doubt')

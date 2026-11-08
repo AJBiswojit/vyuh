@@ -18,6 +18,7 @@ import {
 } from '../../mock-data/index.js'
 import { applyAttention, buildAttendanceReport, completedChapterIds, createAttendanceState, gradeQuiz, settleAttendance, clamp } from '../../shared/lib/learningMath.js'
 import { notFound, serviceError } from './errors.js'
+import { demoStudentWorkspace } from './ownWorkspace.js'
 
 const VERSION = 1
 const SPEEDS = [0.5, 0.75, 1, 1.25, 1.5, 2]
@@ -56,6 +57,19 @@ function writeStore(studentId, store) {
 function numericFlag(key) {
   try { const value = Number(localStorage.getItem(key)); return Number.isFinite(value) && value > 0 ? value : undefined } catch { return undefined }
 }
+/**
+ * Resolve the real recording fixture an ended class produced. Prefer the
+ * session's `recordingId`; fall back to its seeded `joinUrl` only when that
+ * URL already points at a recording. Never guess a default recording id.
+ * @param {import('../../contracts/live.js').LiveSession} session
+ */
+function recordingIdFor(session) {
+  if (session.status !== 'ended') return null
+  if (typeof session.recordingId === 'string' && session.recordingId.length > 0) return session.recordingId
+  const match = /^\/student\/recordings\/([^/?#]+)/.exec(session.joinUrl ?? '')
+  return match ? match[1] : null
+}
+
 /** @param {string} sessionId */
 function findSession(sessionId) {
   const session = liveSessions.find((item) => item.id === sessionId)
@@ -220,23 +234,41 @@ function composeRoom(roomId, studentId) {
   return { ...clone(room), joined, participants, peerCount: participants.length }
 }
 
+/* BATCH 3.2 (F-01 / F-02): every method below resolves the SAME fail-closed
+ * identity scope. `demoStudentWorkspace()` throws `not_found` for unknown,
+ * forged, mismatched and sessionless identities, so no caller can reach the
+ * seeded fixtures without a valid matching demo session. */
+/** @param {string} studentId @returns {boolean} true when this is an own (issued) workspace */
+function ownStudent(studentId) {
+  return !demoStudentWorkspace(studentId)
+}
+/** @param {string} studentId @param {string} resource */
+function denyDemoRecord(studentId, resource) {
+  if (!demoStudentWorkspace(studentId)) throw notFound(resource)
+}
+
 /** @type {import('../types.js').LearningService} */
 export const learningService = {
   listLiveSessions(studentId) {
-    return simulate(() => liveSessions.map((session) => ({ ...clone(session), attendingCount: session.attendingCount + (readStore(studentId).attendance[session.id]?.connected ? 1 : 0) })))
+    return simulate(() => {
+      if (ownStudent(studentId)) return []
+      return liveSessions.map((session) => ({ ...clone(session), attendingCount: session.attendingCount + (readStore(studentId).attendance[session.id]?.connected ? 1 : 0) }))
+    })
   },
   getLiveRoom(sessionId, studentId) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       const session = findSession(sessionId)
       const store = readStore(studentId)
       const saved = store.attendance[sessionId]
       const attendance = saved ? settleAttendance(saved, session, Date.now(), attendancePolicy) : null
       const chat = [...seedChat.filter((message) => message.sessionId === sessionId), ...(store.chat[sessionId] ?? [])]
-      return { session: clone(session), policy: clone(attendancePolicy), chat, queue: readQueue(sessionId, studentId), attendance, recordingId: session.status === 'ended' ? 'rec-rot-b' : null }
+      return { session: clone(session), policy: clone(attendancePolicy), chat, queue: readQueue(sessionId, studentId), attendance, recordingId: recordingIdFor(session) }
     })
   },
   joinLive(sessionId, studentId) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       const session = findSession(sessionId)
       if (session.status !== 'live') throw serviceError('session_not_live', 'This room is not live right now. Check the schedule or open its recording.', 409)
       const store = readStore(studentId)
@@ -254,6 +286,7 @@ export const learningService = {
   },
   leaveLive(sessionId, studentId) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       disconnectPresence(sessionId, studentId)
       const state = readStore(studentId).attendance[sessionId]
       if (!state) throw notFound('attendance record')
@@ -262,6 +295,7 @@ export const learningService = {
   },
   setPresenceVisibility(sessionId, studentId, visible) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       const store = readStore(studentId)
       const state = store.attendance[sessionId]
       if (!state) throw notFound('attendance record')
@@ -275,6 +309,7 @@ export const learningService = {
   },
   respondAttention(sessionId, studentId, checkId) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       const state = resolveCheck(sessionId, studentId, checkId, 'answered')
       if (!state) throw serviceError('check_expired', 'That attention check already closed. Your next check will arrive soon.', 409)
       const entry = classChannels.get(classKey(sessionId, studentId))
@@ -286,6 +321,7 @@ export const learningService = {
   },
   sendChat(sessionId, studentId, body) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       const text = body.trim()
       if (!text) throw serviceError('empty_message', 'Write a message before sending.', 400)
       const message = { id: `chat-self-${Date.now()}`, author: 'You', role: /** @type {const} */ ('student'), body: text.slice(0, 500), sentAt: new Date().toISOString() }
@@ -298,6 +334,7 @@ export const learningService = {
   },
   submitQuestion(sessionId, studentId, body) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       const text = body.trim()
       if (!text) throw serviceError('empty_question', 'Write your question before adding it to the queue.', 400)
       /** @type {QueueQuestion} */
@@ -325,6 +362,7 @@ export const learningService = {
   },
   upvoteQuestion(sessionId, questionId, studentId) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'live session')
       const question = readQueue(sessionId, studentId).find((item) => item.id === questionId)
       if (!question) throw notFound('question')
       const seed = seedQuestions.find((item) => item.id === questionId)
@@ -341,6 +379,8 @@ export const learningService = {
     }, { faulty: false })
   },
   subscribe(sessionId, studentId, listener) {
+    /* Issued accounts have no demo room channel; return a harmless no-op. */
+    if (!demoStudentWorkspace(studentId)) return () => {}
     const entry = ensureClassChannel(sessionId, studentId)
     entry.channel.start()
     const off = entry.emitter.subscribe(listener)
@@ -355,6 +395,11 @@ export const learningService = {
   },
   getAttendance(studentId) {
     return simulate(() => {
+      /* WS1: an issued account has NO seeded attendance history and no invented
+         percentage. Only records genuinely created for THAT id may appear. */
+      if (ownStudent(studentId)) {
+        return buildAttendanceReport([], attendancePolicy, studentId, attendancePeriodLabel)
+      }
       const store = readStore(studentId)
       /** @type {import('../../contracts/learning.js').AttendanceRecord[]} */
       const liveRecords = []
@@ -367,10 +412,18 @@ export const learningService = {
       return buildAttendanceReport([...clone(attendanceHistory), ...liveRecords], attendancePolicy, studentId, attendancePeriodLabel)
     })
   },
-  listRecordings(studentId) { return simulate(() => recordings.map((fixture) => composeRecording(fixture, studentId))) },
-  getRecording(recordingId, studentId) { return simulate(() => composeRecording(findRecording(recordingId), studentId)) },
+  listRecordings(studentId) {
+    return simulate(() => ownStudent(studentId) ? [] : recordings.map((fixture) => composeRecording(fixture, studentId)))
+  },
+  getRecording(recordingId, studentId) {
+    return simulate(() => {
+      denyDemoRecord(studentId, 'recording')
+      return composeRecording(findRecording(recordingId), studentId)
+    })
+  },
   savePlayback(recordingId, studentId, input) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'recording')
       const fixture = findRecording(recordingId)
       const store = readStore(studentId)
       const previous = store.playback[recordingId] ?? composeRecording(fixture, studentId).playback
@@ -387,6 +440,7 @@ export const learningService = {
   },
   addBookmark(recordingId, studentId, timeSeconds, label) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'recording')
       const fixture = findRecording(recordingId)
       const store = readStore(studentId)
       const playback = store.playback[recordingId] ?? composeRecording(fixture, studentId).playback
@@ -399,6 +453,7 @@ export const learningService = {
   },
   addNote(recordingId, studentId, timeSeconds, text) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'recording')
       const fixture = findRecording(recordingId)
       const body = text.trim()
       if (!body) throw serviceError('empty_note', 'Write a note before saving it.', 400)
@@ -413,6 +468,7 @@ export const learningService = {
   },
   submitQuiz(recordingId, studentId, answers) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'recording')
       const fixture = findRecording(recordingId)
       const store = readStore(studentId)
       const playback = store.playback[recordingId] ?? composeRecording(fixture, studentId).playback
@@ -426,20 +482,30 @@ export const learningService = {
       return result
     }, { faulty: false })
   },
-  listDoubts(studentId) { return simulate(() => [...clone(doubtFixtures), ...readStore(studentId).doubts].sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())) },
+  listDoubts(studentId) {
+    return simulate(() => {
+      const own = ownStudent(studentId)
+      const items = own ? readStore(studentId).doubts : [...clone(doubtFixtures), ...readStore(studentId).doubts]
+      return items.sort((a, b) => new Date(b.updatedAt).getTime() - new Date(a.updatedAt).getTime())
+    })
+  },
   getDoubt(doubtId, studentId) {
     return simulate(() => {
-      const doubt = [...doubtFixtures, ...readStore(studentId).doubts].find((item) => item.id === doubtId)
+      const own = ownStudent(studentId)
+      const doubt = (own ? readStore(studentId).doubts : [...doubtFixtures, ...readStore(studentId).doubts]).find((item) => item.id === doubtId)
       if (!doubt) throw notFound('doubt')
       return doubt
     })
   },
   createDoubt(input) {
     return simulate(() => {
+      /* Own doubts are allowed; a demo recording may never be attached to an
+         institute-issued account's new record. */
+      const own = ownStudent(input.studentId)
       const title = input.title.trim()
       const body = input.body.trim()
       if (!title || !body) throw serviceError('empty_doubt', 'Add a title and describe the doubt before posting.', 400)
-      const recording = input.recordingId ? recordings.find((item) => item.id === input.recordingId) : null
+      const recording = own || !input.recordingId ? null : recordings.find((item) => item.id === input.recordingId)
       const now = new Date().toISOString()
       /** @type {DoubtThreadDetail} */
       const doubt = { id: `doubt-${Date.now()}`, title: title.slice(0, 140), status: 'open', subjectName: recording?.subjectName ?? 'General', recordingId: recording?.id ?? null, recordingTitle: recording?.title ?? null, timeSeconds: input.timeSeconds, createdAt: now, updatedAt: now, messages: [{ id: `dm-${Date.now()}`, author: 'You', role: 'student', body: body.slice(0, 2000), createdAt: now }] }
@@ -453,29 +519,31 @@ export const learningService = {
     return simulate(() => {
       const text = body.trim()
       if (!text) throw serviceError('empty_reply', 'Write a reply before sending.', 400)
+      const own = ownStudent(studentId)
       const store = readStore(studentId)
-      const all = [...clone(doubtFixtures), ...store.doubts]
+      const all = own ? [...store.doubts] : [...clone(doubtFixtures), ...store.doubts]
       const index = all.findIndex((item) => item.id === doubtId)
       if (index < 0) throw notFound('doubt')
       const now = new Date().toISOString()
       const next = { ...all[index], updatedAt: now, messages: [...all[index].messages, { id: `dm-${Date.now()}`, author: 'You', role: /** @type {const} */ ('student'), body: text.slice(0, 2000), createdAt: now }] }
-      const fixtureIndex = doubtFixtures.findIndex((item) => item.id === doubtId)
-      if (fixtureIndex >= 0) {
-        const storedIndex = store.doubts.findIndex((item) => item.id === doubtId)
-        if (storedIndex >= 0) store.doubts[storedIndex] = next
-        else store.doubts.push(next)
-      } else {
-        const storedIndex = store.doubts.findIndex((item) => item.id === doubtId)
-        store.doubts[storedIndex] = next
-      }
+      const storedIndex = store.doubts.findIndex((item) => item.id === doubtId)
+      if (storedIndex >= 0) store.doubts[storedIndex] = next
+      else if (!own) store.doubts.push(next)
+      else throw notFound('doubt')
       writeStore(studentId, store)
       return next
     }, { faulty: false })
   },
-  listStudyRooms(studentId) { return simulate(() => studyRooms.map((room) => composeRoom(room.id, studentId))) },
-  getStudyRoom(roomId, studentId) { return simulate(() => composeRoom(roomId, studentId)) },
+  listStudyRooms(studentId) { return simulate(() => ownStudent(studentId) ? [] : studyRooms.map((room) => composeRoom(room.id, studentId))) },
+  getStudyRoom(roomId, studentId) {
+    return simulate(() => {
+      denyDemoRecord(studentId, 'study room')
+      return composeRoom(roomId, studentId)
+    })
+  },
   joinStudyRoom(roomId, studentId) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'study room')
       const room = studyRooms.find((item) => item.id === roomId)
       if (!room) throw notFound('study room')
       if (room.mode !== 'interactive') throw serviceError('room_not_interactive', 'Only interactive rooms can be joined.', 409)
@@ -488,6 +556,7 @@ export const learningService = {
   },
   leaveStudyRoom(roomId, studentId) {
     return simulate(() => {
+      denyDemoRecord(studentId, 'study room')
       const store = readStore(studentId)
       store.rooms[roomId] = false
       writeStore(studentId, store)
@@ -495,6 +564,7 @@ export const learningService = {
     }, { faulty: false })
   },
   subscribeRoom(roomId, studentId, listener) {
+    if (!demoStudentWorkspace(studentId)) return () => {}
     const key = classKey(roomId, studentId)
     let entry = roomChannels.get(key)
     if (!entry) {

@@ -104,19 +104,44 @@ export function gradeQuiz(quiz, answers) {
   return { quizId: quiz.id, score: correctQuestionIds.length, total: quiz.questions.length, answers, correctQuestionIds, submittedAt: new Date().toISOString() }
 }
 
+/**
+ * The institute calendar is Asia/Kolkata (UTC+05:30, no DST). Format the parts
+ * explicitly so the key is `YYYY-MM-DD` regardless of the host's locale data.
+ * @param {number} ms
+ */
+export function istDayKey(ms) {
+  const parts = istDayFormatter.formatToParts(new Date(ms))
+  const pick = (/** @type {Intl.DateTimeFormatPartTypes} */ type) => parts.find((part) => part.type === type)?.value ?? ''
+  return `${pick('year')}-${pick('month')}-${pick('day')}`
+}
+
+/** Calendar-day arithmetic on an IST day key. Month/year boundaries roll over
+ * correctly; it never depends on the host timezone or on a 24h millisecond
+ * addition (which is wrong when `now` sits near an IST midnight).
+ * @param {string} dayKey `YYYY-MM-DD` in the Asia/Kolkata calendar.
+ * @param {number} deltaDays
+ */
+export function shiftIstDayKey(dayKey, deltaDays) {
+  const [year, month, day] = dayKey.split('-').map(Number)
+  const shifted = new Date(Date.UTC(year, month - 1, day + deltaDays))
+  return `${shifted.getUTCFullYear()}-${String(shifted.getUTCMonth() + 1).padStart(2, '0')}-${String(shifted.getUTCDate()).padStart(2, '0')}`
+}
+
+const istDayFormatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' })
+const fallbackDayFormatter = new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'short' })
+
 /** @param {LiveSession[]} sessions @param {number} [nowMs] */
 export function groupSessionsByDay(sessions, nowMs = Date.now()) {
-  const formatter = new Intl.DateTimeFormat('en-CA', { timeZone: 'Asia/Kolkata', year: 'numeric', month: '2-digit', day: '2-digit' })
-  const key = (/** @type {number} */ ms) => formatter.format(new Date(ms))
+  const key = (/** @type {number} */ ms) => istDayKey(ms)
   const today = key(nowMs)
-  const tomorrow = key(nowMs + 86_400_000)
-  const yesterday = key(nowMs - 86_400_000)
+  const tomorrow = shiftIstDayKey(today, 1)
+  const yesterday = shiftIstDayKey(today, -1)
   /** @type {Map<string,{key:string,label:string,date:string,sessions:LiveSession[]}>} */
   const groups = new Map()
   for (const session of sessions) {
     const dayKey = key(new Date(session.startsAt).getTime())
     if (!groups.has(dayKey)) {
-      const label = dayKey === today ? 'Today' : dayKey === tomorrow ? 'Tomorrow' : dayKey === yesterday ? 'Yesterday' : new Intl.DateTimeFormat('en-IN', { timeZone: 'Asia/Kolkata', weekday: 'long', day: 'numeric', month: 'short' }).format(new Date(session.startsAt))
+      const label = dayKey === today ? 'Today' : dayKey === tomorrow ? 'Tomorrow' : dayKey === yesterday ? 'Yesterday' : fallbackDayFormatter.format(new Date(session.startsAt))
       groups.set(dayKey, { key: dayKey, label, date: session.startsAt, sessions: [] })
     }
     groups.get(dayKey)?.sessions.push(session)

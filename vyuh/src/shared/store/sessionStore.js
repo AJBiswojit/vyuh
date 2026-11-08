@@ -10,6 +10,7 @@ import { mergeSession, readPersistedSession, SESSION_STORAGE_KEY, sessionStateSt
  * @property {User | null} user
  * @property {'boot'|'anonymous'|'authenticated'} status
  * @property {'expired'|null} notice
+ * @property {boolean} mustChangePassword   Data-driven first-login flag (Batch 2).
  * @property {(session: AuthSession) => void} setSession
  * @property {() => void} initialize
  * @property {() => void} clear
@@ -21,24 +22,35 @@ import { mergeSession, readPersistedSession, SESSION_STORAGE_KEY, sessionStateSt
 export const useSessionStore = create()(
   persist(
     (set) => ({
-      session: null, user: null, status: 'boot', notice: null,
+      session: null, user: null, status: 'boot', notice: null, mustChangePassword: false,
       setSession: (session) => {
         if (session.expiresAt <= Date.now()) {
-          set({ session: null, user: null, status: 'anonymous', notice: 'expired' })
+          set({ session: null, user: null, status: 'anonymous', notice: 'expired', mustChangePassword: false })
           return
         }
-        set({ session, user: session.user, status: 'authenticated', notice: null })
+        set({
+          session,
+          user: session.user,
+          status: 'authenticated',
+          notice: null,
+          mustChangePassword: session.mustChangePassword ?? session.user?.mustChangePassword ?? false,
+        })
       },
       initialize: () => {
         const session = readPersistedSession()
-        set({ session, user: session?.user ?? null, status: session ? 'authenticated' : 'anonymous' })
+        set({
+          session,
+          user: session?.user ?? null,
+          status: session ? 'authenticated' : 'anonymous',
+          mustChangePassword: session?.mustChangePassword ?? session?.user?.mustChangePassword ?? false,
+        })
       },
       clear: () => {
-        set({ session: null, user: null, status: 'anonymous', notice: null })
+        set({ session: null, user: null, status: 'anonymous', notice: null, mustChangePassword: false })
         sessionStateStorage.removeItem(SESSION_STORAGE_KEY)
       },
       expire: () => {
-        set({ session: null, user: null, status: 'anonymous', notice: 'expired' })
+        set({ session: null, user: null, status: 'anonymous', notice: 'expired', mustChangePassword: false })
         sessionStateStorage.removeItem(SESSION_STORAGE_KEY)
       },
       clearNotice: () => set({ notice: null }),

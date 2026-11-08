@@ -15,6 +15,7 @@ export function homeRouteFor(role) {
 /** @param {unknown} value */
 export function safeReturnPath(value) {
   if (typeof value !== 'string' || !value.startsWith('/') || value.startsWith('//') || value.includes('\\')) return null
-  if (/^\/(login|sign-in|signup|verify-otp|forgot-password|reset-password|join)(\/|\?|$)/.test(value)) return null
+  /* Setup is a gated first-login destination, never an arbitrary return target. */
+  if (/^\/(login|sign-in|signup|verify-otp|forgot-password|reset-password|join|setup-account)(\/|\?|$)/.test(value)) return null
   return value
 }

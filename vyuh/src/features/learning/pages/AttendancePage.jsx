@@ -1,7 +1,7 @@
 import { AlertTriangle } from 'lucide-react'
 import { PageHeader } from '@/app/layouts/WorkspaceLayout.jsx'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle.js'
-import { Badge, Button, Card, ErrorState, Skeleton } from '@/shared/ui'
+import { Badge, Button, Card, EmptyState, ErrorState, Skeleton } from '@/shared/ui'
 import { formatDate } from '@/shared/lib/format.js'
 import { PresenceRing } from '../components/PresenceRing.jsx'
 import { VerdictChip } from '../components/VerdictChip.jsx'
@@ -16,7 +16,12 @@ export function AttendancePage() {
   return (
     <div>
       <PageHeader eyebrow="Learning · Attendance" title="Attendance" description="Automatic presence from live rooms, with a plain-words threshold and grace rule." />
-      {query.isPending ? <Skeleton.Region label="Loading attendance"><Skeleton.Block className="h-40" /><div className="mt-4 space-y-2"><Skeleton.Line /><Skeleton.Line /><Skeleton.Line /></div></Skeleton.Region> : query.isError || !report ? <ErrorState title="Attendance could not load" description={query.error?.message ?? 'Try again in a moment.'} action={<Button variant="secondary" onClick={() => query.refetch()}>Try again</Button>} /> : (
+      {query.isPending ? <Skeleton.Region label="Loading attendance"><Skeleton.Block className="h-40" /><div className="mt-4 space-y-2"><Skeleton.Line /><Skeleton.Line /><Skeleton.Line /></div></Skeleton.Region> : query.isError || !report ? <ErrorState title="Attendance could not load" description={query.error?.message ?? 'Try again in a moment.'} action={<Button variant="secondary" onClick={() => query.refetch()}>Try again</Button>} /> : report.sessions.length === 0 ? (
+        /* BATCH 3.1 (WS1 / WS9): an institute-issued student has NO attendance
+           history. Never show an invented 0.0% "monthly summary" or a defaulter
+           warning for an account with no records at all. */
+        <EmptyState size="panel" title="No attendance records yet" description="Your academic office has not published any live-room attendance for this account. Nothing is shown here until a real class is recorded." />
+      ) : (
         <div className="space-y-6">
           <div className="grid gap-4 lg:grid-cols-[20rem_minmax(0,1fr)]">
             <Card eyebrow={report.periodLabel} title="Monthly summary">

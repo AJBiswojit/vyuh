@@ -7,8 +7,9 @@ import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle.js'
 import { cn } from '@/shared/lib/cn.js'
 import { parseCsv } from '@/shared/lib/adminMath.js'
 import { useAdminBatches } from '../hooks/useAdmin.js'
-import { useCommitImport, useImportPreview, useImportTemplate } from '../hooks/useAdminOps.js'
+import { useCommitImport, useImportPreview, useImportTemplate, useInstituteIdConfig, useTransientCredentialLifecycle } from '../hooks/useAdminOps.js'
 import { Stepper } from '../components/Stepper.jsx'
+import { CredentialsSheet } from '../components/CredentialsSheet.jsx'
 
 const STEPS = [
   { id: 'upload', label: 'Upload', hint: 'Paste the sheet or choose the file the office exported.' },
@@ -33,6 +34,19 @@ export function AdminImportPage() {
   const batches = useAdminBatches()
   const preview = useImportPreview()
   const commit = useCommitImport()
+  const clearCredentials = useTransientCredentialLifecycle()
+  /* BATCH 3.1 (WS2 / R-1): clear the credential-bearing mutation result when
+     this wizard unmounts (navigation, route change or logout), not only when
+     the sheet is explicitly closed. */
+  const commitRef = useRef(commit)
+  commitRef.current = commit
+  useEffect(() => () => {
+    commitRef.current.reset()
+  }, [])
+  const idConfig = useInstituteIdConfig()
+
+  /** TRANSIENT credentials: component-local only, cleared on sheet close. */
+  const [credentials, setCredentials] = useState(/** @type {import('@/contracts/admin.js').CredentialSheetRow[]} */ ([]))
 
   const [step, setStep] = useState(1)
   const [csv, setCsv] = useState('')
@@ -174,7 +188,9 @@ export function AdminImportPage() {
       { csv, mapping, fixes, skipped, fileName },
       {
         onSuccess: (payload) => {
-          setResult(payload)
+          /* Strip the transient values from the persisted-in-state result card. */
+          setResult({ ...payload, credentials: undefined })
+          setCredentials(payload.credentials ?? [])
           toast.success('Import committed', `${payload.created} accounts created · ${payload.skipped} skipped`)
         },
         onError: (/** @type {Error} */ error) => toast.error('Not committed', error.message),
@@ -217,7 +233,10 @@ export function AdminImportPage() {
           </Link>
         }
         actions={
-          <Button variant="secondary" icon={<Download strokeWidth={1.5} />} onClick={downloadSample}>
+          /* WS11: while the one-time credentials sheet is open, the sheet's
+             confirmation is the primary action. Background actions are
+             disabled rather than competing with it. */
+          <Button variant="secondary" icon={<Download strokeWidth={1.5} />} onClick={downloadSample} disabled={credentials.length > 0}>
             Sample CSV
           </Button>
         }
@@ -236,8 +255,9 @@ export function AdminImportPage() {
                 {result.created} account{result.created === 1 ? '' : 's'} created from {fileName}.
               </p>
               <p className="mt-1 text-2xs leading-relaxed text-muted">
-                {result.skipped} row{result.skipped === 1 ? '' : 's'} skipped. Each account arrives invited, so the
-                person sets their own password on first sign-in. The import is recorded in the audit ledger as
+                {result.skipped} row{result.skipped === 1 ? '' : 's'} skipped. Each account is active with an
+                Admin-issued Institute ID and a one-time temporary password that must be changed at first sign-in.
+                The import is recorded in the audit ledger as
                 <span className="font-mono text-heading"> {result.auditId}</span>.
               </p>
               <p className="mt-3 text-2xs leading-relaxed text-body">{result.names.join(' · ')}</p>
@@ -587,6 +607,13 @@ export function AdminImportPage() {
 
           {step === 4 && data ? (
             <Card eyebrow="Step 4" title="Commit">
+              {idConfig.data && !idConfig.data.studentCreationAvailable ? (
+                <p role="alert" className="mb-4 flex items-start gap-2 rounded-sm border border-danger/40 bg-danger/5 p-3 text-2xs leading-relaxed text-danger-fg">
+                  <X className="mt-0.5 size-3.5 shrink-0" strokeWidth={2} aria-hidden="true" />
+                  The institute has not supplied its two-digit year token. Student rows will be rejected at commit.
+                  Configure it in Institute ID settings on the People page first; faculty rows are unaffected.
+                </p>
+              ) : null}
               <div className="grid gap-5 sm:grid-cols-3">
                 <div>
                   <p className="rule-label">Accounts to create</p>
@@ -602,8 +629,9 @@ export function AdminImportPage() {
                 </div>
               </div>
               <ul className="mt-5 flex flex-col gap-1.5 text-2xs leading-relaxed text-muted">
-                <li>Every created account starts invited; the person sets a password on first sign-in.</li>
-                <li>Roll numbers and emails are checked against the whole roster, not just this sheet.</li>
+                <li>Every created account is active and signs in with its Institute ID; email is a contact field only.</li>
+                <li>One-time credentials are shown immediately and cannot be retrieved after the sheet is closed.</li>
+                <li>Roll numbers and emails are checked against the whole merged roster, not just this sheet.</li>
                 <li>The import is appended to the audit ledger with the row counts and the source file.</li>
               </ul>
             </Card>
@@ -648,6 +676,17 @@ export function AdminImportPage() {
           </p>
         </div>
       )}
+
+      {/* U-1 / U-2: transient rows only. Closing clears component state AND the
+          originating mutation data, so no credential survives anywhere. */}
+      <CredentialsSheet
+        rows={credentials}
+        onClose={() => {
+          setCredentials([])
+          commit.reset()
+          clearCredentials()
+        }}
+      />
     </>
   )
 }

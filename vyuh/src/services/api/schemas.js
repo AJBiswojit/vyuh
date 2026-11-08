@@ -13,6 +13,8 @@ const isoDateTime = z.string().min(1)
 
 export { roleSchema, userSchema, authSessionSchema } from '../authSchemas.js'
 export { loginSchema, signupSchema, otpSchema, forgotPasswordSchema, resetPasswordSchema, acceptInviteSchema, resetPasswordRequestSchema, acceptInviteRequestSchema, authChallengeSchema, resetRequestSchema, signupOptionsSchema, facultyInviteSchema } from '../authSchemas.js'
+/* Batch 2 identity/setup validation, re-exported from the shared boundary. */
+export { loginIdentifierSchema, instituteIdSchema, setupAccountSchema, instituteAccountInputSchema, accountStatusSchema, INSTITUTE_ID_PATTERNS } from '../authSchemas.js'
 export const trackSchema = z.enum(['JEE', 'NEET', 'NTA'])
 export const cohortSchema = z.enum(['class11', 'class12', 'dropper'])
 
@@ -78,6 +80,10 @@ export const examSchema = testSchema.extend({
   negativeMarks: z.number().nonnegative(),
   endsAt: isoDateTime.nullable(),
   instructions: z.array(z.string()),
+  // Registry read-model annotations supplied by the mock exam service.
+  playable: z.boolean().optional(),
+  resultMode: z.enum(['question_level', 'score_summary', 'unpublished']).optional(),
+  unavailableReason: z.string().nullable().optional(),
 })
 
 export const subjectScoreSchema = z.object({
@@ -261,9 +267,14 @@ export const analysisDetailsSchema = z.object({
   whatIf: whatIfSummarySchema, attemptTrend: z.array(analysisTrendPointSchema), markingScheme: markingSchemeSchema,
 })
 export const releasePolicySchema = z.object({ released: z.boolean(), releaseAt: isoDateTime.nullable(), serverNow: isoDateTime, offsetMs: z.number(), rule: z.string() })
+export const examScoreSummarySchema = z.object({
+  score: z.number(), maxMarks: z.number().positive(), percentile: z.number(), accuracy: z.number(), submittedAt: isoDateTime,
+  subjects: z.array(subjectScoreSchema),
+})
 export const examAnalysisSchema = z.object({
   examId: z.string(), examTitle: z.string(), attemptId: z.string(), studentId: z.string(), candidateName: z.string(), rollNumber: z.string(), submittedAt: isoDateTime,
-  source: z.enum(['fixture', 'submission']), release: releasePolicySchema, details: analysisDetailsSchema.nullable(),
+  source: z.enum(['fixture', 'submission', 'unpublished']), release: releasePolicySchema, details: analysisDetailsSchema.nullable(),
+  notice: z.string().nullable().optional(), scoreSummary: examScoreSummarySchema.nullable().optional(),
 })
 export const topicRevisionSchema = z.object({
   topicId: z.string(), topicName: z.string(), subjectName: z.string(), mastery: z.number().min(0).max(100), weightage: z.number().nonnegative(), advice: z.string(),
@@ -287,6 +298,7 @@ export const liveSessionSchema = z.object({
   batchId: z.string(),
   batchName: z.string(),
   mediaUrl: z.string(),
+  recordingId: z.string().nullable().optional(),
 })
 
 export const announcementSchema = z.object({

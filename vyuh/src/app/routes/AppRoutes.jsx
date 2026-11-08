@@ -3,7 +3,9 @@ import { Navigate, Outlet, Route, Routes, useLocation } from 'react-router-dom'
 import { Skeleton } from '@/shared/ui'
 import { useSessionStore } from '@/shared/store/sessionStore.js'
 import { useSessionBootstrap, useLogoutCleanup } from '@/features/auth/hooks/useSession.js'
-import { GuestOnly, RequireAuth, RequireRole } from './guards.jsx'
+import { GuestOnly, RequireAuth, RequireRole, RequirePasswordChange } from './guards.jsx'
+import { V2_ROUTE_ALIASES, V2_NAMESPACES } from './v2RouteTable.js'
+import { V2Redirect, V2NamespaceRedirect } from './v2Aliases.jsx'
 import { PublicLayout } from '../layouts/PublicLayout.jsx'
 import { AuthLayout } from '../layouts/AuthLayout.jsx'
 import { StudentLayout } from '../layouts/StudentLayout.jsx'
@@ -17,11 +19,11 @@ import { AdminLayout } from '../layouts/AdminLayout.jsx'
  */
 const LandingPage = lazy(() => import('@/features/landing/pages/LandingPage.jsx').then((m) => ({ default: m.LandingPage })))
 const LoginPage = lazy(() => import('@/features/auth/pages/LoginPage.jsx').then((m) => ({ default: m.LoginPage })))
-const SignupPage = lazy(() => import('@/features/auth/pages/SignupPage.jsx').then((m) => ({ default: m.SignupPage })))
-const VerifyOtpPage = lazy(() => import('@/features/auth/pages/VerifyOtpPage.jsx').then((m) => ({ default: m.VerifyOtpPage })))
+const SetupAccountPage = lazy(() => import('@/features/auth/pages/SetupAccountPage.jsx').then((m) => ({ default: m.SetupAccountPage })))
 const ForgotPasswordPage = lazy(() => import('@/features/auth/pages/ForgotPasswordPage.jsx').then((m) => ({ default: m.ForgotPasswordPage })))
 const ResetPasswordPage = lazy(() => import('@/features/auth/pages/ResetPasswordPage.jsx').then((m) => ({ default: m.ResetPasswordPage })))
-const JoinInvitePage = lazy(() => import('@/features/auth/pages/JoinInvitePage.jsx').then((m) => ({ default: m.JoinInvitePage })))
+/* SignupPage.jsx, VerifyOtpPage.jsx and JoinInvitePage.jsx are preserved on disk
+   but are no longer routed: registration/provisioning is retired (Batch 2). */
 const AccessDeniedPage = lazy(() => import('@/features/system/pages/AccessDeniedPage.jsx').then((m) => ({ default: m.AccessDeniedPage })))
 const StudentHomePage = lazy(() => import('@/features/dashboard/pages/StudentHomePage.jsx').then((m) => ({ default: m.StudentHomePage })))
 const FacultyDashboardPage = lazy(() => import('@/features/faculty/pages/FacultyDashboardPage.jsx').then((m) => ({ default: m.FacultyDashboardPage })))
@@ -95,6 +97,15 @@ function LegacySignInRedirect() {
   const location = useLocation()
   return <Navigate to={`/login${location.search}${location.hash}`} replace state={location.state} />
 }
+
+/**
+ * Informational retirement redirect. Public self-registration, OTP signup
+ * verification and self-service invitations can no longer create or activate an
+ * account. The sign-in explains who issues credentials instead.
+ */
+function RegistrationRetired() {
+  return <Navigate to="/login" replace state={{ registrationRetired: true }} />
+}
 function LegacyStudentRedirect() {
   const location = useLocation()
   return <Navigate to={`${location.pathname.replace(/^\/app/, '/student')}${location.search}${location.hash}`} replace state={location.state} />
@@ -119,42 +130,56 @@ export function AppRoutes() {
         <Route element={<AuthLayout />}>
           <Route element={<GuestOnly />}>
             <Route path="/login" element={<LoginPage />} />
-            <Route path="/signup" element={<SignupPage />} />
+            <Route path="/signup" element={<RegistrationRetired />} />
           </Route>
-          <Route path="/verify-otp" element={<VerifyOtpPage />} />
+          {/* Setup is reachable only with an authenticated session and is OUTSIDE
+              GuestOnly / RequirePasswordChange, so a gated user cannot loop. */}
+          <Route element={<RequireAuth />}>
+            <Route path="/setup-account" element={<SetupAccountPage />} />
+          </Route>
+          <Route path="/verify-otp" element={<RegistrationRetired />} />
           <Route path="/forgot-password" element={<ForgotPasswordPage />} />
           <Route path="/reset-password" element={<ResetPasswordPage />} />
-          <Route path="/join/:inviteCode" element={<JoinInvitePage />} />
+          <Route path="/join/:inviteCode" element={<RegistrationRetired />} />
         </Route>
 
         {/* ── Student workspace ──────────────────────────────────── */}
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allow={['student']} />}>
-            {/* The hall drops workspace chrome; the rest of the journey keeps it. */}
-            <Route path="/student/exams/:examId/hall" element={<ExamHallPage />} />
-            <Route path="/student" element={<StudentLayout />}>
-              <Route index element={<StudentHomePage />} />
-              <Route path="/student/exams" element={<ExamsPage />} />
-              <Route path="/student/exams/:examId" element={<ExamDetailPage />} />
-              <Route path="/student/exams/:examId/instructions" element={<ExamInstructionsPage />} />
-              <Route path="/student/exams/:examId/confirmation" element={<ExamConfirmationPage />} />
-              <Route path="/student/exams/:examId/result" element={<ExamResultPage />} />
-              <Route path="/student/revision/:topicId" element={<TopicRevisionPage />} />
-              <Route path="/student/papers" element={<ExamsPage />} />
-              <Route path="/student/live" element={<LiveClassesPage />} />
-              <Route path="/student/live/:sessionId" element={<LiveRoomPage />} />
-              <Route path="/student/recordings" element={<RecordingsPage />} />
-              <Route path="/student/recordings/:recordingId" element={<RecordingPlayerPage />} />
-              <Route path="/student/performance" element={<PerformancePage />} />
-              <Route path="/student/doubts" element={<DoubtsPage />} />
-              <Route path="/student/doubts/:doubtId" element={<DoubtThreadPage />} />
-              <Route path="/student/attendance" element={<AttendancePage />} />
-              <Route path="/student/study-rooms" element={<StudyRoomsPage />} />
-              <Route path="/student/study-rooms/:roomId" element={<StudyRoomPage />} />
-              <Route path="/student/profile" element={<ProfilePage />} />
-              <Route path="/student/account" element={<ProfilePage />} />
-              <Route path="/student/batch" element={<StudentBatchPage />} />
-              <Route path="*" element={<NotFoundPage />} />
+            <Route element={<RequirePasswordChange />}>
+              {/* v2 /s aliases keep the same guards and resolve to canonical pages. */}
+              {V2_ROUTE_ALIASES.student.map((alias) => (
+                <Route key={alias.path} path={alias.path} element={<V2Redirect to={alias.to} />} />
+              ))}
+              {V2_NAMESPACES.filter((entry) => entry.from === '/s').map((entry) => (
+                <Route key={entry.path} path={entry.path} element={<V2NamespaceRedirect from={entry.from} to={entry.to} />} />
+              ))}
+              {/* The hall drops workspace chrome; the rest of the journey keeps it. */}
+              <Route path="/student/exams/:examId/hall" element={<ExamHallPage />} />
+              <Route path="/student" element={<StudentLayout />}>
+                <Route index element={<StudentHomePage />} />
+                <Route path="/student/exams" element={<ExamsPage />} />
+                <Route path="/student/exams/:examId" element={<ExamDetailPage />} />
+                <Route path="/student/exams/:examId/instructions" element={<ExamInstructionsPage />} />
+                <Route path="/student/exams/:examId/confirmation" element={<ExamConfirmationPage />} />
+                <Route path="/student/exams/:examId/result" element={<ExamResultPage />} />
+                <Route path="/student/revision/:topicId" element={<TopicRevisionPage />} />
+                <Route path="/student/papers" element={<ExamsPage />} />
+                <Route path="/student/live" element={<LiveClassesPage />} />
+                <Route path="/student/live/:sessionId" element={<LiveRoomPage />} />
+                <Route path="/student/recordings" element={<RecordingsPage />} />
+                <Route path="/student/recordings/:recordingId" element={<RecordingPlayerPage />} />
+                <Route path="/student/performance" element={<PerformancePage />} />
+                <Route path="/student/doubts" element={<DoubtsPage />} />
+                <Route path="/student/doubts/:doubtId" element={<DoubtThreadPage />} />
+                <Route path="/student/attendance" element={<AttendancePage />} />
+                <Route path="/student/study-rooms" element={<StudyRoomsPage />} />
+                <Route path="/student/study-rooms/:roomId" element={<StudyRoomPage />} />
+                <Route path="/student/profile" element={<ProfilePage />} />
+                <Route path="/student/account" element={<ProfilePage />} />
+                <Route path="/student/batch" element={<StudentBatchPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
             </Route>
           </Route>
         </Route>
@@ -162,24 +187,32 @@ export function AppRoutes() {
         {/* ── Faculty workspace ──────────────────────────────────── */}
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allow={['faculty']} />}>
-            <Route path="/faculty" element={<FacultyLayout />}>
-              <Route index element={<FacultyDashboardPage />} />
-              <Route path="/faculty/bank" element={<FacultyBankPage />} />
-              <Route path="/faculty/bank/new" element={<FacultyQuestionEditorPage />} />
-              <Route path="/faculty/bank/:questionId" element={<FacultyQuestionEditorPage />} />
-              <Route path="/faculty/exams" element={<FacultyExamsPage />} />
-              <Route path="/faculty/exams/:examId" element={<FacultyExamBuilderPage />} />
-              <Route path="/faculty/exams/:examId/monitor" element={<FacultyExamMonitorPage />} />
-              <Route path="/faculty/analysis" element={<FacultyAnalysisPage />} />
-              <Route path="/faculty/classes" element={<FacultyClassesPage />} />
-              <Route path="/faculty/classes/:sessionId/host" element={<FacultyHostPage />} />
-              <Route path="/faculty/recordings" element={<FacultyRecordingsPage />} />
-              <Route path="/faculty/recordings/:recordingId" element={<FacultyRecordingEditorPage />} />
-              <Route path="/faculty/attendance" element={<FacultyAttendancePage />} />
-              <Route path="/faculty/doubts" element={<FacultyDoubtsPage />} />
-              <Route path="/faculty/doubts/:doubtId" element={<FacultyDoubtThreadPage />} />
-              <Route path="/faculty/account" element={<AccountPage />} />
-              <Route path="*" element={<NotFoundPage />} />
+            <Route element={<RequirePasswordChange />}>
+              {V2_ROUTE_ALIASES.faculty.map((alias) => (
+                <Route key={alias.path} path={alias.path} element={<V2Redirect to={alias.to} />} />
+              ))}
+              {V2_NAMESPACES.filter((entry) => entry.from === '/f').map((entry) => (
+                <Route key={entry.path} path={entry.path} element={<V2NamespaceRedirect from={entry.from} to={entry.to} />} />
+              ))}
+              <Route path="/faculty" element={<FacultyLayout />}>
+                <Route index element={<FacultyDashboardPage />} />
+                <Route path="/faculty/bank" element={<FacultyBankPage />} />
+                <Route path="/faculty/bank/new" element={<FacultyQuestionEditorPage />} />
+                <Route path="/faculty/bank/:questionId" element={<FacultyQuestionEditorPage />} />
+                <Route path="/faculty/exams" element={<FacultyExamsPage />} />
+                <Route path="/faculty/exams/:examId" element={<FacultyExamBuilderPage />} />
+                <Route path="/faculty/exams/:examId/monitor" element={<FacultyExamMonitorPage />} />
+                <Route path="/faculty/analysis" element={<FacultyAnalysisPage />} />
+                <Route path="/faculty/classes" element={<FacultyClassesPage />} />
+                <Route path="/faculty/classes/:sessionId/host" element={<FacultyHostPage />} />
+                <Route path="/faculty/recordings" element={<FacultyRecordingsPage />} />
+                <Route path="/faculty/recordings/:recordingId" element={<FacultyRecordingEditorPage />} />
+                <Route path="/faculty/attendance" element={<FacultyAttendancePage />} />
+                <Route path="/faculty/doubts" element={<FacultyDoubtsPage />} />
+                <Route path="/faculty/doubts/:doubtId" element={<FacultyDoubtThreadPage />} />
+                <Route path="/faculty/account" element={<AccountPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
             </Route>
           </Route>
         </Route>
@@ -187,33 +220,44 @@ export function AppRoutes() {
         {/* ── Academic office ────────────────────────────────────── */}
         <Route element={<RequireAuth />}>
           <Route element={<RequireRole allow={['admin']} />}>
-            <Route path="/admin" element={<AdminLayout />}>
-              <Route index element={<AdminDashboardPage />} />
-              <Route path="/admin/users" element={<AdminUsersPage />} />
-              <Route path="/admin/users/import" element={<AdminImportPage />} />
-              <Route path="/admin/batches" element={<AdminBatchesPage />} />
-              <Route path="/admin/batches/:batchId" element={<AdminBatchDetailPage />} />
-              <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
-              <Route path="/admin/policies" element={<AdminPoliciesPage />} />
-              <Route path="/admin/integrity" element={<AdminIntegrityPage />} />
-              <Route path="/admin/reports" element={<AdminReportsPage />} />
-              <Route path="/admin/moderation" element={<AdminModerationPage />} />
-              <Route path="/admin/audit" element={<AdminAuditPage />} />
-              <Route path="/admin/settings" element={<AdminSettingsPage />} />
-              <Route path="/admin/account" element={<AccountPage />} />
-              <Route path="*" element={<NotFoundPage />} />
+            <Route element={<RequirePasswordChange />}>
+              {V2_ROUTE_ALIASES.admin.map((alias) => (
+                <Route key={alias.path} path={alias.path} element={<V2Redirect to={alias.to} />} />
+              ))}
+              {V2_NAMESPACES.filter((entry) => entry.from === '/a').map((entry) => (
+                <Route key={entry.path} path={entry.path} element={<V2NamespaceRedirect from={entry.from} to={entry.to} />} />
+              ))}
+              <Route path="/admin" element={<AdminLayout />}>
+                <Route index element={<AdminDashboardPage />} />
+                <Route path="/admin/users" element={<AdminUsersPage />} />
+                <Route path="/admin/users/import" element={<AdminImportPage />} />
+                <Route path="/admin/batches" element={<AdminBatchesPage />} />
+                <Route path="/admin/batches/:batchId" element={<AdminBatchDetailPage />} />
+                <Route path="/admin/approvals" element={<AdminApprovalsPage />} />
+                <Route path="/admin/policies" element={<AdminPoliciesPage />} />
+                <Route path="/admin/integrity" element={<AdminIntegrityPage />} />
+                <Route path="/admin/reports" element={<AdminReportsPage />} />
+                <Route path="/admin/moderation" element={<AdminModerationPage />} />
+                <Route path="/admin/audit" element={<AdminAuditPage />} />
+                <Route path="/admin/settings" element={<AdminSettingsPage />} />
+                <Route path="/admin/account" element={<AccountPage />} />
+                <Route path="*" element={<NotFoundPage />} />
+              </Route>
             </Route>
           </Route>
         </Route>
 
-        {/* Mismatched roles keep their own chrome and an explicit escape link. */}
+        {/* Mismatched roles keep their own chrome and an explicit escape link.
+            A gated user still cannot reach any protected page before setup. */}
         <Route element={<RequireAuth />}>
-          <Route element={<RoleLayout />}>
-            <Route path="/access-denied" element={<AccessDeniedPage />} />
-          </Route>
-          <Route element={<RequireRole allow={['student']} />}>
-            <Route path="/app" element={<LegacyStudentRedirect />} />
-            <Route path="/app/*" element={<LegacyStudentRedirect />} />
+          <Route element={<RequirePasswordChange />}>
+            <Route element={<RoleLayout />}>
+              <Route path="/access-denied" element={<AccessDeniedPage />} />
+            </Route>
+            <Route element={<RequireRole allow={['student']} />}>
+              <Route path="/app" element={<LegacyStudentRedirect />} />
+              <Route path="/app/*" element={<LegacyStudentRedirect />} />
+            </Route>
           </Route>
         </Route>
 

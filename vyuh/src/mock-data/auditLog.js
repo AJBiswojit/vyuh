@@ -29,6 +29,17 @@ export const AUDIT_ACTIONS = {
   'batch.faculty': { label: 'Faculty assignment changed', tone: 'info' },
   'settings.branding': { label: 'Branding saved', tone: 'info' },
   'user.invite': { label: 'Invitations sent', tone: 'info' },
+  /* Batch 3 — Admin People. Additive only; every existing key is preserved. */
+  'user.create': { label: 'Account created', tone: 'answer' },
+  'user.import': { label: 'CSV import committed', tone: 'answer' },
+  'user.suspend': { label: 'Account suspended', tone: 'danger' },
+  'user.reactivate': { label: 'Account reactivated', tone: 'answer' },
+  'user.lock': { label: 'Account locked', tone: 'danger' },
+  'user.unlock': { label: 'Account unlocked', tone: 'answer' },
+  'user.archive': { label: 'Account archived', tone: 'danger' },
+  'user.edit': { label: 'Account profile edited', tone: 'info' },
+  'user.batch.move': { label: 'Student batch changed', tone: 'review' },
+  'user.credential.reissue': { label: 'Temporary password reissued', tone: 'review' },
 }
 
 /** @param {string} action */

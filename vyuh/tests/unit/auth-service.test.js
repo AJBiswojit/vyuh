@@ -46,34 +46,46 @@ describe('mock AuthService', () => {
     expect(JSON.parse(localStorage.getItem('vyuh.mock.auth.v1') ?? '{"attempts":{}}').attempts['offline@vidyutacademy.in']).toBeUndefined()
   })
 
-  it('requires signup consent and a valid institute/batch, then verifies OTP', async () => {
+  /* C1 rewrite: consent/institute/batch validation still exists as a pure schema
+     (see registration-retirement.test.jsx), but the service no longer provisions
+     anyone. C1's no-plaintext assertion is preserved here AND ported into the
+     first-login flow in first-login.test.jsx. */
+  it('retires signup: schema input still validates, but no account, OTP or plaintext can be stored', async () => {
     await expect(auth.signup({ ...signup, termsConsent: false })).rejects.toThrow()
-    await expect(auth.signup({ ...signup, instituteCode: 'WRONG' })).rejects.toMatchObject({ code: 'invalid_institute' })
-    const challenge = await auth.signup(signup)
-    expect(challenge.demoCode).toBe('123456')
-    await expect(auth.login({ email: signup.email, password: signup.password })).rejects.toMatchObject({ code: 'email_unverified' })
-    await expect(auth.verifyOtp({ challengeId: challenge.id, code: '000000' })).rejects.toMatchObject({ code: 'otp_expired' })
-    const session = await auth.verifyOtp({ challengeId: challenge.id, code: '123456' })
-    expect(session.user.role).toBe('student')
-    expect(session.user.batchId).toBe(signup.batchId)
-    expect((await auth.login({ email: signup.email, password: signup.password })).user.email).toBe(signup.email)
-    expect(localStorage.getItem('vyuh.mock.auth.v1')).not.toContain(signup.password)
+    await expect(auth.signup({ ...signup, instituteCode: 'WRONG' })).rejects.toMatchObject({ code: 'registration_retired' })
+    await expect(auth.signup(signup)).rejects.toMatchObject({ code: 'registration_retired' })
+    await expect(auth.login({ email: signup.email, password: signup.password })).rejects.toMatchObject({ code: 'invalid_credentials' })
+    const stored = JSON.parse(localStorage.getItem('vyuh.mock.auth.v1') ?? '{}')
+    expect(Object.keys(stored.challenges ?? {})).toEqual([])
+    expect(stored.accounts?.[signup.email]).toBeUndefined()
+    expect(localStorage.getItem('vyuh.mock.auth.v1') ?? '').not.toContain(signup.password)
+    expect(localStorage.getItem('vyuh.mock.accounts.v1') ?? '').not.toContain(signup.password)
+    expect(localStorage.getItem(SESSION_STORAGE_KEY) ?? '').not.toContain(signup.password)
   })
 
-  it('enforces resend cooldown and invalidates the old code', async () => {
-    const challenge = await auth.signup(signup)
-    await expect(auth.resendOtp(challenge.id)).rejects.toMatchObject({ code: 'resend_too_soon' })
-    vi.setSystemTime(Date.now() + 31_000)
-    const next = await auth.resendOtp(challenge.id)
-    expect(next.id).not.toBe(challenge.id)
-    await expect(auth.verifyOtp({ challengeId: challenge.id, code: '123456' })).rejects.toMatchObject({ code: 'challenge_not_found' })
-    expect((await auth.verifyOtp({ challengeId: next.id, code: '123456' })).user.email).toBe(signup.email)
+  /* C1 rewrite: with signup retired there is no OTP challenge to resend. */
+  it('a resend cannot recreate a retired signup challenge', async () => {
+    await expect(auth.signup(signup)).rejects.toMatchObject({ code: 'registration_retired' })
+    await expect(auth.resendOtp('missing-signup-challenge')).rejects.toMatchObject({ code: 'challenge_not_found' })
+    await expect(auth.getChallenge('missing-signup-challenge')).rejects.toMatchObject({ code: 'challenge_not_found' })
+    const stored = JSON.parse(localStorage.getItem('vyuh.mock.auth.v1') ?? '{}')
+    expect(Object.keys(stored.challenges ?? {})).toEqual([])
   })
 
-  it('expires OTPs after ten minutes without extending them on read', async () => {
-    const challenge = await auth.signup(signup)
-    vi.setSystemTime(challenge.expiresAt + 1)
-    await expect(auth.verifyOtp({ challengeId: challenge.id, code: '123456' })).rejects.toMatchObject({ code: 'otp_expired' })
+  /* C1 rewrite: the ten-minute OTP expiry case is retired with documentation
+     (no challenge can be created). A stale legacy challenge is still refused. */
+  it('no OTP challenge exists to expire, and a stale legacy challenge cannot activate an account', async () => {
+    await expect(auth.signup(signup)).rejects.toMatchObject({ code: 'registration_retired' })
+    await expect(auth.verifyOtp({ challengeId: 'legacy-signup', code: '000000' })).rejects.toMatchObject({ code: 'challenge_not_found' })
+    /* Simulate localStorage written by an older build: verification must still fail. */
+    const legacy = {
+      accounts: {}, attempts: {}, resets: {}, acceptedInvites: [],
+      challenges: { 'legacy-signup': { id: 'legacy-signup', email: signup.email, purpose: 'signup', code: '123456', expiresAt: Date.now() + 600_000, resendAvailableAt: Date.now(), attempts: 0, demoCode: '123456' } },
+    }
+    localStorage.setItem('vyuh.mock.auth.v1', JSON.stringify(legacy))
+    await expect(auth.verifyOtp({ challengeId: 'legacy-signup', code: '123456' })).rejects.toMatchObject({ code: 'registration_retired' })
+    expect(JSON.parse(localStorage.getItem('vyuh.mock.auth.v1')).challenges['legacy-signup']).toBeUndefined()
+    expect(localStorage.getItem(SESSION_STORAGE_KEY) ?? '').not.toContain(signup.password)
   })
 
   it('returns a generic reset response, consumes reset tokens, and clears lockout', async () => {
@@ -87,12 +99,14 @@ describe('mock AuthService', () => {
     expect((await auth.login({ email: 'ananya.sahoo@vidyutacademy.in', password: 'NewFocused2026!' })).user.role).toBe('student')
   })
 
-  it('accepts a faculty invitation once and rejects expired/unknown codes', async () => {
-    const session = await auth.acceptInvite({ inviteCode: 'VYUH-FACULTY-2026', password: 'FacultyFocus2026!' })
-    expect(session.user.role).toBe('faculty')
-    await expect(auth.acceptInvite({ inviteCode: 'VYUH-FACULTY-2026', password: 'FacultyFocus2026!' })).rejects.toMatchObject({ code: 'invite_accepted' })
+  /* C1 rewrite: invitations are read-only status records; activation is retired. */
+  it('keeps invitation records read-only and refuses account activation', async () => {
+    await expect(auth.acceptInvite({ inviteCode: 'VYUH-FACULTY-2026', password: 'FacultyFocus2026!' })).rejects.toMatchObject({ code: 'registration_retired' })
     await expect(auth.getInvite('EXPIRED-INVITE')).resolves.toMatchObject({ status: 'expired' })
     await expect(auth.getInvite('missing')).rejects.toMatchObject({ code: 'invite_not_found' })
+    expect(JSON.parse(localStorage.getItem('vyuh.mock.auth.v1') ?? '{}').acceptedInvites ?? []).toEqual([])
+    expect(localStorage.getItem('vyuh.mock.auth.v1') ?? '').not.toContain('FacultyFocus2026!')
+    expect(useSessionStore.getState().user).toBeNull()
   })
 })
 

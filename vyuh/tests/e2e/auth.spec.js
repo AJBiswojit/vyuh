@@ -57,65 +57,40 @@ test('five failed attempts lock the account across reloads', async ({ page }) =>
   await expect(page.getByRole('alert')).toContainText('Account temporarily locked')
 })
 
-test('signup, consent, OTP paste, and student session', async ({ page }) => {
-  await page.getByRole('link', { name: 'Create your account' }).click()
-  await expect(page.getByRole('heading', { name: 'Make room for progress.' })).toBeVisible()
-  await page.getByLabel('Full name').fill('Kiran Mishra')
-  await page.getByLabel('Email address').fill(`kiran-${Date.now()}@example.com`)
-  await page.getByLabel('Institute code').fill('VYUH2026')
-  await page.getByLabel('Your batch').selectOption('bat-prayas-m')
-  await page.getByLabel('Create a password', { exact: true }).fill('FocusedMind2026!')
-  await page.getByRole('button', { name: 'Create account & verify email' }).click()
-  await expect(page.getByText('Accept the Terms to create an account.')).toBeVisible()
-  await page.getByLabel(/I accept the Terms/).check()
-  await page.getByLabel(/I agree to the attendance/).check()
-  await page.getByRole('button', { name: 'Create account & verify email' }).click()
-  await expect(page.getByRole('heading', { name: 'A code. A fresh start.' })).toBeVisible()
-  await expect(page.getByRole('button', { name: /Resend in/ })).toBeDisabled()
-  await page.getByRole('textbox', { name: 'Digit 1 of 6' }).click()
-  // Use the demo inbox button for deterministic entry, then verify paste separately below.
-  await page.getByRole('button', { name: 'Fill demo code 123456' }).click()
-  await expect(page.getByRole('textbox', { name: 'Digit 6 of 6' })).toHaveValue('6')
-  await page.getByRole('button', { name: 'Verify & continue' }).click()
-  await expect(page).toHaveURL(/\/student$/)
-  expect(await page.evaluate(() => localStorage.getItem('vyuh.session'))).not.toContain('FocusedMind2026!')
+/* C1 rewrite: public self-registration no longer exists. */
+test('public signup is retired and creates no student session', async ({ page }) => {
+  await expect(page.getByRole('link', { name: 'Create your account' })).toHaveCount(0)
+  await page.goto('/signup')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByText('Accounts are issued by your academic office')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Create account & verify email' })).toHaveCount(0)
+  const state = await page.evaluate(() => JSON.parse(localStorage.getItem('vyuh.session') ?? '{}').state?.session ?? null)
+  expect(state).toBeNull()
+  expect(await page.evaluate(() => localStorage.getItem('vyuh.mock.accounts.v1') ?? '')).not.toContain('VYU-S')
 })
 
-test('OTP auto-advance and paste support', async ({ page }) => {
-  await page.goto('/signup')
-  await page.getByLabel('Full name').fill('Paste Test')
-  await page.getByLabel('Email address').fill(`paste-${Date.now()}@example.com`)
-  await page.getByLabel('Institute code').fill('VYUH2026')
-  await page.getByLabel('Your batch').selectOption('bat-prayas-m')
-  await page.getByLabel('Create a password', { exact: true }).fill('FocusedMind2026!')
-  await page.getByLabel(/I accept the Terms/).check()
-  await page.getByLabel(/I agree to the attendance/).check()
-  await page.getByRole('button', { name: 'Create account & verify email' }).click()
-  const first = page.getByRole('textbox', { name: 'Digit 1 of 6' })
-  await first.click()
-  await page.keyboard.type('1')
-  await expect(page.getByRole('textbox', { name: 'Digit 2 of 6' })).toBeFocused()
-  await first.click()
-  await first.evaluate((node) => {
-    const data = new DataTransfer(); data.setData('text/plain', '123456')
-    node.dispatchEvent(new ClipboardEvent('paste', { clipboardData: data, bubbles: true, cancelable: true }))
-  })
-  await expect(page.getByRole('textbox', { name: 'Digit 6 of 6' })).toHaveValue('6')
+/* C1 rewrite: OTP auto-advance/paste coverage is retired with documentation —
+   no challenge can be created from a public form in Batch 2. */
+test('the OTP verification route cannot complete a retired signup', async ({ page }) => {
+  await page.goto('/verify-otp?challenge=demo-signup')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByText('Accounts are issued by your academic office')).toBeVisible()
+  await expect(page.getByRole('textbox', { name: 'Digit 1 of 6' })).toHaveCount(0)
+  const challenges = await page.evaluate(() => Object.keys(JSON.parse(localStorage.getItem('vyuh.mock.auth.v1') ?? '{}').challenges ?? {}))
+  expect(challenges).toEqual([])
 })
 
-test('expired OTP shows its own message', async ({ page }) => {
+/* C1 rewrite: the expired-OTP/resend case is retired with documentation; there
+   is no reachable OTP UI. C1's no-plaintext assertion now lives in the
+   first-login unit flow (tests/unit/first-login.test.jsx). */
+test('no OTP challenge or plaintext credential survives the retired routes', async ({ page }) => {
   await page.goto('/signup')
-  await page.getByLabel('Full name').fill('Expired OTP')
-  await page.getByLabel('Email address').fill(`expired-${Date.now()}@example.com`)
-  await page.getByLabel('Institute code').fill('VYUH2026')
-  await page.getByLabel('Your batch').selectOption('bat-prayas-m')
-  await page.getByLabel('Create a password', { exact: true }).fill('FocusedMind2026!')
-  await page.getByLabel(/I accept the Terms/).check()
-  await page.getByLabel(/I agree to the attendance/).check()
-  await page.getByRole('button', { name: 'Create account & verify email' }).click()
-  await page.getByRole('button', { name: 'Try expired code (000000)' }).click()
-  await page.getByRole('button', { name: 'Verify & continue' }).click()
-  await expect(page.getByRole('alert')).toContainText('Verification code expired')
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByRole('button', { name: 'Try expired code (000000)' })).toHaveCount(0)
+  await expect(page.getByRole('button', { name: /Resend in/ })).toHaveCount(0)
+  for (const key of ['vyuh.mock.auth.v1', 'vyuh.mock.accounts.v1', 'vyuh.session']) {
+    expect(await page.evaluate((storageKey) => localStorage.getItem(storageKey) ?? '', key)).not.toContain('FocusedMind2026!')
+  }
 })
 
 test('forgot password mock inbox and reset', async ({ page }) => {
@@ -132,13 +107,15 @@ test('forgot password mock inbox and reset', async ({ page }) => {
   await expect(page).toHaveURL(/\/student$/)
 })
 
-test('faculty invitation reaches faculty layout', async ({ page }) => {
+/* C1 rewrite: invitations cannot self-activate an account. */
+test('the invitation route cannot activate an account or reach the faculty layout', async ({ page }) => {
   await page.goto('/join/VYUH-FACULTY-2026')
-  await page.getByLabel('Create your password', { exact: true }).fill('FacultyFocus2026!')
-  await page.getByLabel('Confirm password', { exact: true }).fill('FacultyFocus2026!')
-  await page.getByRole('button', { name: 'Accept invite & join' }).click()
-  await expect(page).toHaveURL(/\/faculty$/)
-  await expect(page.getByRole('navigation', { name: 'Faculty workspace' })).toBeVisible()
+  await expect(page).toHaveURL(/\/login$/)
+  await expect(page.getByText('Accounts are issued by your academic office')).toBeVisible()
+  await expect(page.getByRole('button', { name: 'Accept invite & join' })).toHaveCount(0)
+  await expect(page.getByRole('navigation', { name: 'Faculty workspace' })).toHaveCount(0)
+  const state = await page.evaluate(() => JSON.parse(localStorage.getItem('vyuh.session') ?? '{}').state?.session ?? null)
+  expect(state).toBeNull()
 })
 
 test('mismatched role shows access denied with own workspace link', async ({ page }) => {
@@ -164,11 +141,31 @@ test('logout clears localStorage and returns to landing', async ({ page }) => {
 
 test('mobile auth pages have no horizontal overflow and keyboard login works', async ({ page }) => {
   await page.setViewportSize({ width: 390, height: 844 })
-  for (const path of ['/login', '/signup', '/forgot-password', '/reset-password', '/join/VYUH-FACULTY-2026']) {
+  for (const path of ['/login', '/forgot-password', '/reset-password', '/signup', '/join/VYUH-FACULTY-2026']) {
     await page.goto(path)
+    /* Retired routes now land on /login; they still must not overflow. */
     await expect(page.locator('main h1')).toBeVisible()
     expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
   }
+  /* Batch 2 deliberately has no Admin People UI, so the first-login page is
+     reached in E2E with an injected gated session (metadata only — never a
+     credential). The real credential-issuance journey belongs to Batch 3. */
+  await page.evaluate(() => {
+    const now = Date.now()
+    const session = {
+      token: 'e2e-gated-session', issuedAt: now, expiresAt: now + 8 * 60 * 60 * 1000,
+      expiresInSeconds: 8 * 60 * 60, mustChangePassword: true,
+      user: {
+        id: 'usr-ananya', name: 'Ananya Sahoo', email: 'ananya.sahoo@vidyutacademy.in',
+        role: 'student', initials: 'AS', joinedAt: '2026-01-01', mustChangePassword: true,
+      },
+    }
+    localStorage.setItem('vyuh.session', JSON.stringify({ version: 1, state: { session } }))
+  })
+  await page.goto('/setup-account')
+  await expect(page.getByRole('heading', { name: 'Choose your own password.' })).toBeVisible()
+  expect(await page.evaluate(() => document.documentElement.scrollWidth <= window.innerWidth)).toBe(true)
+  await page.evaluate(() => localStorage.removeItem('vyuh.session'))
   await page.goto('/login')
   await page.getByLabel('Email address').focus()
   await page.keyboard.type('snehasish@vidyutacademy.in')

@@ -28,6 +28,9 @@
  * @typedef {import('../contracts/auth.js').AuthChallenge} AuthChallenge
  * @typedef {Object} AuthService
  * @property {(input: import('../contracts/auth.js').LoginInput) => Promise<AuthSession>} login
+ * @property {(input: import('../contracts/auth.js').LoginByInstituteIdInput) => Promise<AuthSession>} loginByInstituteId
+ * @property {(input: import('../contracts/auth.js').SetupAccountInput) => Promise<AuthSession>} changePasswordWithSetup
+ * @property {() => Promise<import('../contracts/auth.js').AccountStatusInfo | null>} getAccountStatus
  * @property {(input: import('../contracts/auth.js').SignupInput) => Promise<AuthChallenge>} signup
  * @property {(challengeId: string) => Promise<AuthChallenge>} getChallenge
  * @property {(input: { challengeId: string, code: string }) => Promise<AuthSession | { email: string, resetPath: string }>} verifyOtp
@@ -99,8 +102,8 @@
  *
  * ── Live ────────────────────────────────────────────────────────────────
  * @typedef {Object} LiveService
- * @property {() => Promise<LiveSession[]>} listUpcoming
- * @property {() => Promise<import('../contracts/student.js').Recording[]>} listRecordings
+ * @property {(studentId?: string) => Promise<LiveSession[]>} listUpcoming
+ * @property {(studentId?: string) => Promise<import('../contracts/student.js').Recording[]>} listRecordings
  *
  * ── Learning (Phase 6) ──────────────────────────────────────────────────
  * Subscription methods are the one synchronous exception: they return an
@@ -211,6 +214,15 @@
  * @property {(adminId: string, query?: import('../contracts/admin.js').AuditQuery) => Promise<import('../contracts/admin.js').AuditPage>} listAudit
  * @property {(adminId: string) => Promise<import('../contracts/admin.js').Branding>} getBranding
  * @property {(adminId: string, input: Partial<import('../contracts/admin.js').Branding>) => Promise<import('../contracts/admin.js').Branding>} saveBranding
+ * @property {(adminId: string) => Promise<import('../contracts/admin.js').InstituteIdConfigView>} getInstituteIdConfig
+ * @property {(adminId: string, input: { year: string|null }) => Promise<import('../contracts/admin.js').InstituteIdConfigView>} configureInstituteIds
+ * @property {(adminId: string, input: { role: 'student'|'faculty' }) => Promise<{ ok: boolean, instituteId: string|null, code?: string, message?: string }>} previewInstituteId
+ * @property {(adminId: string, input: import('../contracts/admin.js').CreateUserInput) => Promise<import('../contracts/admin.js').CreateUserResult>} createUser
+ * @property {(adminId: string, input: { accountKeys: string[] }) => Promise<{ updated: number }>} markCredentialsShown
+ * @property {(adminId: string, operation: import('../contracts/admin.js').AccountOperation, input: import('../contracts/admin.js').AccountOperationInput) => Promise<import('../contracts/admin.js').AccountOperationResult>} applyAccountOperation
+ * @property {(adminId: string, input: import('../contracts/admin.js').AccountEditInput) => Promise<import('../contracts/admin.js').AccountOperationResult>} editAccount
+ * @property {(adminId: string, input: import('../contracts/admin.js').BatchMoveInput) => Promise<import('../contracts/admin.js').AccountOperationResult>} moveStudentBatch
+ * @property {(adminId: string, input: import('../contracts/admin.js').ReissueCredentialInput) => Promise<import('../contracts/admin.js').ReissueCredentialResult>} reissueTemporaryPassword
  *
  * @typedef {Object} Services
  * @property {AuthService} auth
