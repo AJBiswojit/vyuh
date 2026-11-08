@@ -9,6 +9,7 @@ import { AttentionToast } from '../components/AttentionToast.jsx'
 import { LiveRail } from '../components/LiveRail.jsx'
 import { LiveStage } from '../components/LiveStage.jsx'
 import { useLearningStudentId, useLeaveLive, useLiveAttendance, useLiveRealtime, useLiveRoom, useRespondAttention, useSendChat, useSubmitQuestion, useUpvoteQuestion } from '../hooks/useLearning.js'
+import { StudentClassroom } from '@/features/live/components/StudentClassroom.jsx'
 
 /** Live room: attendance strip above a 16:9 stage, chat/queue rail beside it. */
 export function LiveRoomPage() {
@@ -57,6 +58,18 @@ export function LiveRoomPage() {
           onSendChat={(body) => sendChat.mutate(body, { onError: (error) => toast.show({ title: 'Message not sent', description: error.message, tone: 'danger' }) })}
           onAsk={(body) => ask.mutate(body, { onSuccess: () => toast.show({ title: 'Question added', description: 'Faculty approval will appear in the queue.', tone: 'success' }), onError: (error) => toast.show({ title: 'Question not added', description: error.message, tone: 'danger' }) })}
           onUpvote={(id) => upvote.mutate(id)} />
+      </div>
+      {/* VYUH LIVE STUDIO — the independent light Student Classroom. Everything
+          above (attendance strip, stage, chat/question rail, leave, attention)
+          is unchanged; this pane adds the synchronized broadcast stage, polls,
+          resources, participants, hand raising and the honest summary. */}
+      <div className="mt-6">
+        <StudentClassroom
+          sessionId={sessionId}
+          session={session}
+          attendanceState={attendance.data ?? room.data?.attendance ?? null}
+          replayHref={replayHref}
+        />
       </div>
       {challenge ? <AttentionToast challenge={challenge} busy={respond.isPending} onRespond={() => respond.mutate(challenge.id, { onError: (error) => toast.show({ title: 'Check already closed', description: error.message, tone: 'danger' }) })} /> : null}
     </div>

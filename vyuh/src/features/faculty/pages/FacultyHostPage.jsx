@@ -16,6 +16,7 @@ import {
 } from '../hooks/useFacultyLive.js'
 import { ConfirmAction } from '../components/ConfirmAction.jsx'
 import { ChatModeration, ParticipantList, QuestionQueue } from '../components/HostPanels.jsx'
+import { StudioShell } from '@/features/live/components/StudioShell.jsx'
 
 /**
  * The host console. One room, three jobs: who is here, what they are saying, and
@@ -137,6 +138,11 @@ export function FacultyHostPage() {
           </>
         }
       />
+
+      {/* VYUH LIVE STUDIO — dark broadcast surface. The host console below is
+          unchanged: start/end, attention checks, mute, chat moderation and
+          question approval all keep their existing service paths. */}
+      <StudioShell sessionId={sessionId} hostConsole={console_} />
 
       <dl className="mb-5 grid grid-cols-2 gap-px overflow-hidden rounded-sm border border-line bg-line sm:grid-cols-4 lg:grid-cols-7">
         <Count label="Present" value={console_.counts.present} tone="answer" />
