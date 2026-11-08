@@ -144,6 +144,28 @@ const adminApi = Object.fromEntries(
   adminMethodNames.map((name) => [name, () => Promise.reject(adminError())]),
 )
 
+/**
+ * The Live Studio prototype is mock-only: there is deliberately no backend,
+ * WebSocket, media server or recording service. Every HTTP-mode call rejects
+ * with an honest 501 rather than pretending a real stream exists. Subscriptions
+ * throw synchronously because their contract is synchronous.
+ */
+function liveStudioError() {
+  const error = new Error('The Live Studio prototype is mock-only in this build. Set VITE_USE_MOCK=true; no live streaming or recording endpoints exist.')
+  error.name = 'ServiceError'
+  Object.assign(error, { code: 'live_studio_api_unavailable', status: 501, retryable: false })
+  return error
+}
+
+const liveStudioMethodNames = [
+  'getSnapshot', 'dispatch', 'getSummary', 'reset',
+]
+/** @type {Record<string, unknown>} */
+const liveStudioApi = Object.fromEntries(
+  liveStudioMethodNames.map((name) => [name, () => Promise.reject(liveStudioError())]),
+)
+liveStudioApi.subscribe = () => { throw liveStudioError() }
+
 /** @type {Services} */
 export const apiServices = {
   auth: {
@@ -371,6 +393,8 @@ export const apiServices = {
   faculty: /** @type {unknown} */ (facultyApi),
 
   admin: /** @type {unknown} */ (adminApi),
+
+  liveStudio: /** @type {unknown} */ (liveStudioApi),
 
   live: {
     listUpcoming() {

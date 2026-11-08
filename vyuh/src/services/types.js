@@ -240,6 +240,7 @@
  * @property {LearningService} learning
  * @property {FacultyService} faculty
  * @property {AdminService} admin
+ * @property {import('../contracts/liveStudio.js').LiveStudioService} liveStudio
  */
 
 export {};

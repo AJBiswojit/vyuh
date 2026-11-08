@@ -79,3 +79,11 @@ export {
 } from './integrityReports.js'
 export { approvalQueue, approvalStatusLabels } from './approvals.js'
 export { IMPORT_FIELDS, IMPORT_MAX_ROWS, IMPORT_HEADER_ALIASES, importSampleFileName, importSamples } from './importCsv.js'
+
+/* ── VYUH LIVE STUDIO — new seeds only; existing fixtures stay untouched ──── */
+export {
+  CANONICAL_STUDIO_SESSION_ID, STUDIO_SCENES, STUDIO_TOOLS, PROVENANCE_LABELS,
+  PROTOTYPE_NOTICE, MIRROR_NOTICE, UNAVAILABLE_LABEL, SEEDED_PARTICIPANTS,
+  SEEDED_CHAT, SEEDED_QUESTIONS, SEEDED_POLL_TEMPLATES, SEEDED_SLIDES,
+  SEEDED_RESOURCES, canonicalSessionMetadata,
+} from './liveStudio.js'

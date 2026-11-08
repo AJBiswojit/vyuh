@@ -137,4 +137,13 @@ export const queryKeys = {
     /** @param {string} adminId */
     instituteIdConfig(adminId) { return ['admin', adminId, 'institute-id-config'] },
   },
+
+  /* VYUH LIVE STUDIO — one shared classroom snapshot per session and role.
+     No credential or session envelope is ever stored under a query key. */
+  liveStudio: {
+    /** @param {string} sessionId @param {'faculty'|'student'} role */
+    snapshot(sessionId, role) { return ['live-studio', sessionId, role, 'snapshot'] },
+    /** @param {string} sessionId @param {'faculty'|'student'} role */
+    summary(sessionId, role) { return ['live-studio', sessionId, role, 'summary'] },
+  },
 }
