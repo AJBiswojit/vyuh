@@ -3,6 +3,7 @@ import { within } from '@testing-library/react'
 import { renderRoute, screen, waitFor } from './helpers.jsx'
 import { authService } from '@/services/mock/auth.js'
 import { useSessionStore } from '@/shared/store/sessionStore.js'
+import { configureInstituteIds } from '@/mock-data/index.js'
 
 vi.mock('../../src/mock-data/latency.js', async (importOriginal) => {
   const actual = await importOriginal()
@@ -13,6 +14,12 @@ let session
 beforeEach(async () => {
   localStorage.clear()
   useSessionStore.getState().clear()
+  /* C1 setup change (Batch 3): Batch 2 ships year:null and student provisioning
+     is correctly blocked until the institute supplies its token. This suite's
+     CSV commit case now creates real, loginable student accounts, so the token
+     is configured here as test fixture data — NOT as institute policy. No
+     assertion was removed or weakened; the 720 / 26 / 753 counts are unchanged. */
+  configureInstituteIds({ year: '99' })
   session = await authService.login({ email: 'academic.office@vidyutacademy.in', password: 'vyuh2026' })
 })
 

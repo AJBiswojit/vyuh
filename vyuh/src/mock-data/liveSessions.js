@@ -4,14 +4,23 @@
  * @typedef {import('../contracts/live.js').LiveSession} LiveSession
  */
 const base = new Date()
+/** Asia/Kolkata is UTC+05:30 year-round; the institute has no DST. */
+const IST_OFFSET_MINUTES = 330
 /** @param {number} minutes */
 function relative(minutes) { return new Date(base.getTime() + minutes * 60_000).toISOString() }
-/** @param {number} dayOffset @param {number} hour @param {number} [minute] */
+/**
+ * Place a session on an IST calendar day at an IST wall-clock hour. The result
+ * must not depend on the machine running the demo: `setHours` uses the host's
+ * local zone (UTC in CI), which made `dayAt(1, 9)` land on the wrong IST day.
+ * We shift into an "IST wall clock", move whole calendar days with UTC date
+ * arithmetic, then convert back to a real instant.
+ * @param {number} dayOffset @param {number} hour @param {number} [minute]
+ */
 function dayAt(dayOffset, hour, minute = 0) {
-  const d = new Date(base)
-  d.setDate(d.getDate() + dayOffset)
-  d.setHours(hour, minute, 0, 0)
-  return d.toISOString()
+  const wall = new Date(base.getTime() + IST_OFFSET_MINUTES * 60_000)
+  wall.setUTCDate(wall.getUTCDate() + dayOffset)
+  wall.setUTCHours(hour, minute, 0, 0)
+  return new Date(wall.getTime() - IST_OFFSET_MINUTES * 60_000).toISOString()
 }
 const batchId = 'bat-prayas-m'
 const batchName = 'Prayas JEE 2027 — Morning'
@@ -24,7 +33,9 @@ export const liveSessions = [
   { id: 'ses-org-m', title: 'Organic Reaction Mechanisms — Session 4', subjectId: 'sub-che', subjectName: 'Chemistry', facultyName: 'Rituparna Das', status: 'scheduled', startsAt: relative(95), durationMinutes: 75, attendingCount: 0, capacity: 148, joinUrl: '/student/live/ses-org-m', resourcesAttached: true, mode: 'interactive', batchId, batchName, mediaUrl: '/media/organic-mechanisms-sample.mp4' },
   { id: 'ses-int-c', title: 'Definite Integration · Properties Workshop', subjectId: 'sub-mat', subjectName: 'Mathematics', facultyName: 'Prof. Gayatri Nanda', status: 'scheduled', startsAt: dayAt(1, 9), durationMinutes: 90, attendingCount: 0, capacity: 148, joinUrl: '/student/live/ses-int-c', resourcesAttached: true, mode: 'interactive', batchId, batchName, mediaUrl: '/media/integration-sample.mp4' },
   { id: 'ses-elec-r', title: 'Electrochemistry · Nernst Equation Revision', subjectId: 'sub-che', subjectName: 'Chemistry', facultyName: 'Rituparna Das', status: 'scheduled', startsAt: dayAt(1, 16), durationMinutes: 60, attendingCount: 0, capacity: 148, joinUrl: '/student/live/ses-elec-r', resourcesAttached: false, mode: 'broadcast', batchId, batchName, mediaUrl: '/media/organic-mechanisms-sample.mp4' },
-  { id: 'ses-rot-rec', title: 'Rotational Dynamics · Moment of Inertia', subjectId: 'sub-phy', subjectName: 'Physics', facultyName: 'Dr. Snehasish Mohapatra', status: 'ended', startsAt: dayAt(-1, 10), durationMinutes: 75, attendingCount: 132, capacity: 148, joinUrl: '/student/recordings/rec-rot-b', resourcesAttached: true, mode: 'interactive', batchId, batchName, mediaUrl },
+  // `recordingId` names the real recording fixture this ended class points at
+  // (it matches joinUrl). Never derive a replay link from a hard-coded id.
+  { id: 'ses-rot-rec', title: 'Rotational Dynamics · Moment of Inertia', subjectId: 'sub-phy', subjectName: 'Physics', facultyName: 'Dr. Snehasish Mohapatra', status: 'ended', startsAt: dayAt(-1, 10), durationMinutes: 75, attendingCount: 132, capacity: 148, joinUrl: '/student/recordings/rec-rot-b', recordingId: 'rec-rot-b', resourcesAttached: true, mode: 'interactive', batchId, batchName, mediaUrl },
 ]
 
 /** Incoming chat lines used by the mock realtime channel, in order. */

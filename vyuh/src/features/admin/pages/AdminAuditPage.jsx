@@ -23,6 +23,17 @@ const ACTION_TONES = {
   'batch.faculty': 'info',
   'settings.branding': 'info',
   'user.invite': 'info',
+  /* Batch 3 — additive Admin People vocabulary. */
+  'user.create': 'answer',
+  'user.import': 'answer',
+  'user.suspend': 'danger',
+  'user.reactivate': 'answer',
+  'user.lock': 'danger',
+  'user.unlock': 'answer',
+  'user.archive': 'danger',
+  'user.edit': 'info',
+  'user.batch.move': 'review',
+  'user.credential.reissue': 'review',
 }
 
 /**

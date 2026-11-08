@@ -86,48 +86,39 @@ describe('authentication acceptance flows', () => {
     expect(screen.getByRole('link', { name: /Go to your student workspace/ }).getAttribute('href')).toBe('/student')
   })
 
-  it('signup validates consent, supports the Terms dialog, then paste-verifies OTP', async () => {
-    const { user } = await renderRoute('/signup')
-    await heading('Make room for progress.')
-    await screen.findByLabelText('Your batch')
-    await user.type(screen.getByLabelText('Full name'), 'Kiran Mishra')
-    await user.type(screen.getByLabelText('Email address'), 'kiran@example.com')
-    await user.type(screen.getByLabelText('Institute code'), 'VYUH2026')
-    await user.selectOptions(screen.getByLabelText('Your batch'), 'bat-prayas-m')
-    await user.type(screen.getByLabelText('Create a password'), 'FocusedMind2026!')
-    await user.click(screen.getByRole('button', { name: 'Read the Terms' }))
-    expect(await screen.findByRole('dialog')).toBeTruthy()
-    await user.keyboard('{Escape}')
-    await waitFor(() => expect(screen.queryByRole('dialog')).toBeNull())
-    await user.click(screen.getByRole('button', { name: 'Create account & verify email' }))
-    await alertText('Accept the Terms')
-    expect(screen.getByLabelText(/I accept the Terms/).getAttribute('aria-describedby')).toContain('termsConsent-error')
-    await user.click(screen.getByLabelText(/I accept the Terms/))
-    await user.click(screen.getByLabelText(/I agree to the attendance/))
-    await user.click(screen.getByRole('button', { name: 'Create account & verify email' }))
-    await heading('A code. A fresh start.')
-    expect((await screen.findByRole('button', { name: /Resend in/ })).disabled).toBe(true)
-    const first = screen.getByRole('textbox', { name: 'Digit 1 of 6' })
-    await user.click(first)
-    await user.keyboard('1')
-    expect(document.activeElement).toBe(screen.getByRole('textbox', { name: 'Digit 2 of 6' }))
-    await user.click(first)
-    await user.paste('123456')
-    expect(screen.getByRole('textbox', { name: 'Digit 6 of 6' }).value).toBe('6')
-    await user.click(screen.getByRole('button', { name: 'Verify & continue' }))
-    await waitFor(() => expect(screen.getByTestId('route').textContent).toBe('/student'))
-    expect(useSessionStore.getState().user?.name).toBe('Kiran Mishra')
-    expect(localStorage.getItem(SESSION_STORAGE_KEY)).not.toContain('FocusedMind2026!')
+  /* C1 rewrite: the public signup journey no longer exists. The former
+     consent/dialog/OTP-paste case now asserts route retirement and that a
+     visitor cannot create an account or leave a plaintext credential behind. */
+  it('public signup is retired: no self-created account and no plaintext credential', async () => {
+    await renderRoute('/signup')
+    await heading('Welcome back.')
+    expect(screen.getByTestId('route').textContent).toBe('/login')
+    expect(await screen.findByText(/Accounts are issued by your academic office/)).toBeTruthy()
+    expect(screen.queryByRole('link', { name: /Create your account/i })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'Create account & verify email' })).toBeNull()
+    const input = { name: 'Kiran Mishra', email: 'kiran@example.com', instituteCode: 'VYUH2026', batchId: 'bat-prayas-m', password: 'FocusedMind2026!', termsConsent: true, attendanceConsent: true }
+    await expect(authService.signup(input)).rejects.toMatchObject({ code: 'registration_retired' })
+    await expect(authService.login({ email: input.email, password: input.password })).rejects.toMatchObject({ code: 'invalid_credentials' })
+    expect(useSessionStore.getState().user).toBeNull()
+    for (const key of [SESSION_STORAGE_KEY, 'vyuh.mock.auth.v1', 'vyuh.mock.accounts.v1']) {
+      expect(localStorage.getItem(key) ?? '').not.toContain(input.password)
+    }
   })
 
-  it('shows an expired OTP message and offers resend', async () => {
-    const challenge = await authService.signup({ name: 'Expired Test', email: 'expired@example.com', instituteCode: 'VYUH2026', batchId: 'bat-prayas-m', password: 'FocusedMind2026!', termsConsent: true, attendanceConsent: true })
-    const { user } = await renderRoute(`/verify-otp?challenge=${challenge.id}`)
-    await heading('A code. A fresh start.')
-    await user.click(await screen.findByRole('button', { name: 'Try expired code (000000)' }))
-    await user.click(screen.getByRole('button', { name: 'Verify & continue' }))
-    await alertText('Verification code expired')
-    expect(screen.getByRole('group', { name: 'Six-digit verification code' }).getAttribute('aria-describedby')).toContain('otp-service-error')
+  /* C1 rewrite: OTP is no longer a registration mechanism, so no challenge
+     exists to expire or resend. Expired-code/resend coverage is retired with
+     documentation instead of being silently deleted. */
+  it('the OTP verification route is retired and leaves no challenge state', async () => {
+    await expect(authService.signup({ name: 'Expired Test', email: 'expired@example.com', instituteCode: 'VYUH2026', batchId: 'bat-prayas-m', password: 'FocusedMind2026!', termsConsent: true, attendanceConsent: true })).rejects.toMatchObject({ code: 'registration_retired' })
+    await renderRoute('/verify-otp?challenge=demo-signup')
+    await heading('Welcome back.')
+    expect(await screen.findByText(/Accounts are issued by your academic office/)).toBeTruthy()
+    expect(screen.queryByRole('button', { name: /Resend in/ })).toBeNull()
+    await expect(authService.verifyOtp({ challengeId: 'demo-signup', code: '000000' })).rejects.toMatchObject({ code: 'challenge_not_found' })
+    await expect(authService.verifyOtp({ challengeId: 'demo-signup', code: '123456' })).rejects.toMatchObject({ code: 'challenge_not_found' })
+    const stored = JSON.parse(localStorage.getItem('vyuh.mock.auth.v1') ?? '{}')
+    expect(Object.keys(stored.challenges ?? {})).toEqual([])
+    expect(localStorage.getItem(SESSION_STORAGE_KEY) ?? '').not.toContain('FocusedMind2026!')
   })
 
   it('requests a reset, opens the mock inbox link, and signs in with the new password', async () => {
@@ -147,15 +138,18 @@ describe('authentication acceptance flows', () => {
     await waitFor(() => expect(screen.getByTestId('route').textContent).toBe('/student'))
   })
 
-  it('accepts a faculty invite and reaches the faculty layout', async () => {
-    const { user } = await renderRoute('/join/VYUH-FACULTY-2026')
-    await heading('Your next chapter starts here.')
-    await screen.findByLabelText('Create your password')
-    await user.type(screen.getByLabelText('Create your password'), 'FacultyFocus2026!')
-    await user.type(screen.getByLabelText('Confirm password'), 'FacultyFocus2026!')
-    await user.click(screen.getByRole('button', { name: 'Accept invite & join' }))
-    await waitFor(() => expect(screen.getByTestId('route').textContent).toBe('/faculty'))
-    expect(screen.getByRole('navigation', { name: 'Faculty workspace' })).toBeTruthy()
+  /* C1 rewrite: invitations cannot activate an account or reach a faculty UI. */
+  it('the invitation route cannot activate an account or reach the faculty layout', async () => {
+    await renderRoute('/join/VYUH-FACULTY-2026')
+    await heading('Welcome back.')
+    expect(screen.getByTestId('route').textContent).toBe('/login')
+    expect(screen.queryByRole('navigation', { name: 'Faculty workspace' })).toBeNull()
+    await expect(authService.acceptInvite({ inviteCode: 'VYUH-FACULTY-2026', password: 'FacultyFocus2026!' })).rejects.toMatchObject({ code: 'registration_retired' })
+    await expect(authService.getInvite('EXPIRED-INVITE')).resolves.toMatchObject({ status: 'expired' })
+    expect(useSessionStore.getState().user).toBeNull()
+    for (const key of [SESSION_STORAGE_KEY, 'vyuh.mock.auth.v1', 'vyuh.mock.accounts.v1']) {
+      expect(localStorage.getItem(key) ?? '').not.toContain('FacultyFocus2026!')
+    }
   })
 
   it('logout clears persisted session and returns to the landing page', async () => {
@@ -168,14 +162,17 @@ describe('authentication acceptance flows', () => {
     expect(useSessionStore.getState().user).toBeNull()
   })
 
-  it('login and signup pass automated WCAG A/AA checks', async () => {
-    await renderRoute('/login')
+  /* C1 rewrite: the second axe target is now the retirement notice on /login
+     reached from /signup; the first-login page is axe-tested in first-login.test.jsx. */
+  it('login and the retired-signup notice pass automated WCAG A/AA checks', async () => {
+    const first = await renderRoute('/login')
     await heading('Welcome back.')
     let results = await axe.run(document.body, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'] })
     expect(results.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.html) }))).toEqual([])
+    first.unmount()
     await renderRoute('/signup')
-    await heading('Make room for progress.')
-    await screen.findByLabelText('Your batch')
+    await heading('Welcome back.')
+    await screen.findByText(/Accounts are issued by your academic office/)
     results = await axe.run(document.body, { runOnly: ['wcag2a', 'wcag2aa', 'wcag21aa'] })
     expect(results.violations.map((v) => ({ id: v.id, nodes: v.nodes.map((n) => n.html) }))).toEqual([])
   })

@@ -83,6 +83,17 @@ export function useLogin() {
   return { login: mutation.mutateAsync, isPending: mutation.isPending, error: mutation.error, reset: mutation.reset }
 }
 
+/**
+ * Batch 2 first-login setup. The service returns a refreshed session with
+ * `mustChangePassword: false`; committing it clears the identity query cache and
+ * updates the guard in the same render. No password is ever cached or logged.
+ */
+export function useAccountSetup() {
+  const commit = useCommitSession()
+  const mutation = useMutation({ mutationFn: AuthService.changePasswordWithSetup, onSuccess: commit })
+  return { setup: mutation.mutateAsync, isPending: mutation.isPending, error: mutation.error, reset: mutation.reset }
+}
+
 /** Local logout is authoritative, even if the HTTP revoke request fails. */
 export function useLogout() {
   const navigate = useNavigate()

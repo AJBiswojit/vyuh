@@ -20,6 +20,7 @@
  * @property {string} batchId
  * @property {string} batchName
  * @property {string} mediaUrl                  Looping local sample media for the mock stage.
+ * @property {string | null} [recordingId]      Real recording fixture this class produced, if published.
  */
 
 export {};

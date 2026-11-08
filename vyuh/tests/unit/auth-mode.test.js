@@ -14,8 +14,20 @@ describe('auth mode and return paths', () => {
     expect(services.services.auth).toBe(apiServices.auth)
   })
 
+  it('keeps AuthService facade parity for the new identity methods in both modes', async () => {
+    vi.stubEnv('VITE_USE_MOCK', 'false')
+    vi.resetModules()
+    const { apiServices } = await import('@/services/api/index.js')
+    const { services } = await import('@/shared/lib/services.js')
+    for (const method of ['login', 'loginByInstituteId', 'changePasswordWithSetup', 'getAccountStatus']) {
+      expect(typeof apiServices.auth[method]).toBe('function')
+      expect(typeof services.auth[method]).toBe('function')
+    }
+    await expect(apiServices.auth.changePasswordWithSetup({})).rejects.toMatchObject({ code: 'setup_api_unavailable' })
+  })
+
   it('rejects external, protocol-relative, backslash, and auth return paths', () => {
-    for (const value of ['https://evil.example', '//evil.example', '/\\evil.example', '/login', '/signup?x=1', '/join/CODE', null, 42]) {
+    for (const value of ['https://evil.example', '//evil.example', '/\\evil.example', '/login', '/signup?x=1', '/join/CODE', '/setup-account', '/setup-account?next=/student', null, 42]) {
       expect(safeReturnPath(value)).toBeNull()
     }
     expect(safeReturnPath('/student/papers?filter=live#top')).toBe('/student/papers?filter=live#top')

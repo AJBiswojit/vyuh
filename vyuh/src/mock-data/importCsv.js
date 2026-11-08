@@ -13,7 +13,7 @@
 export const IMPORT_FIELDS = [
   { key: 'rollNumber', label: 'Roll number', required: true, hint: 'Format VY-YY-NNNN. Must be unique across the institution.' },
   { key: 'name', label: 'Full name', required: true, hint: 'As it appears on the board register.' },
-  { key: 'email', label: 'Email', required: true, hint: 'The sign-in address. Must be unique.' },
+  { key: 'email', label: 'Email', required: true, hint: 'Contact address. Must be unique. Sign-in uses the Institute ID issued at creation.' },
   { key: 'phone', label: 'Phone', required: false, hint: 'Ten digits, optionally with +91.' },
   { key: 'role', label: 'Role', required: false, hint: 'student or faculty. Defaults to student.' },
   { key: 'batch', label: 'Batch', required: false, hint: 'Batch name or id. Required for students.' },

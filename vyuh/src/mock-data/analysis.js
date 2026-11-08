@@ -293,9 +293,15 @@ export function classifyMistake(row) {
   return 'misread'
 }
 
-/** Grade a stored Phase 4 submission against the authored bank. @param {ExamSubmissionInput} input @returns {AnalysisDetails} */
-export function buildAnalysisFromSubmission(input) {
-  const bank = new Map(questions.map((question) => [question.id, question]))
+/**
+ * Grade a stored Phase 4 submission against the authored bank for THAT paper.
+ * The default keeps the NEET practice sheet (and existing callers) unchanged.
+ * @param {ExamSubmissionInput} input
+ * @param {AuthoredQuestion[]} [authoredBank]
+ * @returns {AnalysisDetails}
+ */
+export function buildAnalysisFromSubmission(input, authoredBank = questions) {
+  const bank = new Map(authoredBank.map((question) => [question.id, question]))
   const rows = input.entries.flatMap((entry, index) => {
     const question = bank.get(entry.questionId)
     if (!question) return []

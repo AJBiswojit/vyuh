@@ -50,6 +50,7 @@ import {
   examSubmissionReceiptSchema,
   examAnalysisSchema,
   topicRevisionSchema,
+  instituteIdSchema,
 } from './schemas.js'
 import { z } from 'zod'
 
@@ -83,6 +84,14 @@ function facultyError() {
   const error = new Error('The faculty workspace is mock-only in this build. Set VITE_USE_MOCK=true, or publish the faculty endpoints.')
   error.name = 'ServiceError'
   Object.assign(error, { code: 'faculty_api_unavailable', status: 501, retryable: false })
+  return error
+}
+
+/** Batch 2: no backend endpoints exist for identity setup yet. Do not pretend. */
+function authSetupUnavailable() {
+  const error = new Error('First-login setup is mock-only in this build. Set VITE_USE_MOCK=true, or publish the account-setup endpoints.')
+  error.name = 'ServiceError'
+  Object.assign(error, { code: 'setup_api_unavailable', status: 501, retryable: false })
   return error
 }
 
@@ -123,6 +132,11 @@ const adminMethodNames = [
   'getPolicyImpact', 'listPolicyHistory', 'updatePolicy', 'listIntegrityReports',
   'getIntegrityReport', 'decideIntegrity', 'runReport', 'listModeration', 'decideModeration',
   'listAudit', 'getBranding', 'saveBranding',
+  /* Batch 3 — name parity only. The institution console remains mock-only:
+     there are no admin endpoints and every call rejects with an honest 501. */
+  'getInstituteIdConfig', 'configureInstituteIds', 'previewInstituteId', 'createUser',
+  'markCredentialsShown', 'applyAccountOperation', 'editAccount',
+  'moveStudentBatch', 'reissueTemporaryPassword',
 ]
 
 /** @type {Record<string, unknown>} */
@@ -138,6 +152,17 @@ export const apiServices = {
       const session = await request('/auth/login', { method: 'POST', body, schema: authSessionSchema })
       setSessionToken(session.token)
       return session
+    },
+    /** One shared identifier resolver in the facade: an Institute ID is an email-field alias. */
+    loginByInstituteId(input) {
+      const instituteId = instituteIdSchema.parse(input?.instituteId)
+      return apiServices.auth.login({ email: instituteId, password: input?.password })
+    },
+    changePasswordWithSetup() {
+      return Promise.reject(authSetupUnavailable())
+    },
+    getAccountStatus() {
+      return Promise.reject(authSetupUnavailable())
     },
     async signup(input) {
       const body = signupSchema.parse(input)

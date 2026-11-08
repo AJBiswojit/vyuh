@@ -4,6 +4,7 @@ import { PageHeader } from '@/app/layouts/WorkspaceLayout.jsx'
 import { Badge, Button, Card, ErrorState, Skeleton } from '@/shared/ui'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle.js'
 import { formatDateTime } from '@/shared/lib/format.js'
+import { canEnterExamHall, canShowResultSheet, examHallNotice } from '@/shared/lib/examAvailability.js'
 import { useExams, useStudentId } from '@/features/student/hooks/useStudentWorkspace.js'
 import { PatternChips } from '@/features/student/components/PatternChips.jsx'
 import { useActiveExamAttempt } from '../hooks/useExamFlow.js'
@@ -17,7 +18,7 @@ export function ExamDetailPage() {
   const active = useActiveExamAttempt(examId, studentId)
   const exam = exams.data?.find((item) => item.id === examId)
   useDocumentTitle(exam?.title ?? 'Exam detail')
-  const playerReady = exam?.track === 'NEET' && exam.status !== 'closed' && exam.status !== 'draft'
+  const playerReady = canEnterExamHall(exam)
 
   return (
     <>
@@ -41,10 +42,10 @@ export function ExamDetailPage() {
               <ul className="list-disc space-y-1 pl-5 text-xs text-body">{exam.instructions.map((line) => <li key={line}>{line}</li>)}</ul>
             </div>
           </Card>
-          {!playerReady ? <p className="rounded-sm border border-line bg-surface-sunken px-4 py-3 text-xs text-muted">The Phase 4 player is published for the live NEET practice paper. This ledger entry keeps its Phase 3 summary.</p> : null}
+          {examHallNotice(exam) ? <p className="rounded-sm border border-line bg-surface-sunken px-4 py-3 text-xs leading-relaxed text-muted">{examHallNotice(exam)}</p> : null}
           <div className="flex flex-wrap gap-3">
             <Button variant="secondary" icon={<ArrowLeft strokeWidth={1.5} />} onClick={() => navigate('/student/exams')}>Back to exams</Button>
-            {exam.track === 'NEET' ? <Button variant="ghost" icon={<BarChart3 strokeWidth={1.5} />} onClick={() => navigate(`/student/exams/${exam.id}/result`)}>Result sheet</Button> : null}
+            {canShowResultSheet(exam) ? <Button variant="ghost" icon={<BarChart3 strokeWidth={1.5} />} onClick={() => navigate(`/student/exams/${exam.id}/result`)}>Result sheet</Button> : null}
             <Button variant="primary" trailingIcon={<ArrowRight strokeWidth={1.5} />} disabled={!active && !playerReady} onClick={() => navigate(`/student/exams/${exam.id}/${active ? 'hall' : 'instructions'}`)}>{active ? 'Resume exam' : 'Read instructions'}</Button>
           </div>
         </div>

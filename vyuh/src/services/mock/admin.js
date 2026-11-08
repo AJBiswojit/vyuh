@@ -26,9 +26,289 @@ import {
   reportDefinitions, reportFormats, brandingDefaults, adminProfile, adminTerm,
   IMPORT_FIELDS, IMPORT_HEADER_ALIASES, IMPORT_MAX_ROWS, importSamples, importSampleFileName,
   subjects, chapters, simulate, clone,
+  /* Batch 2 identity foundation — read through the barrel only. */
+  ACCOUNTS_STORAGE_KEY, loadAccountsDb, saveAccountsDb, accountByIdentifier,
+  transitionAccountStatus, configureInstituteIds, instituteIdConfig,
+  issueInstituteId, normalizeAccountKey, accountStatusLabels,
+  users as fixtureUsers,
 } from '../../mock-data/index.js'
 import { csvFromColumns, formatPolicyValue, pageCount, policyImpact, reportFileName, validateImport } from '../../shared/lib/adminMath.js'
+import { readPersistedSession } from '../../shared/lib/sessionPersistence.js'
+import { instituteAccountInputSchema } from '../authSchemas.js'
+import { provisionInstituteAccount, issueTemporaryPassword } from './auth.js'
 import { notFound, serviceError } from './errors.js'
+
+/* ── Batch 3 — Admin People identity bridge ─────────────────────────────────
+ * The two Batch 2 ledgers are now joined through a READ-ONLY projection:
+ *   vyuh.mock.accounts.v1  → canonical, loginable institute accounts (source of truth)
+ *   vyuh.mock.admin.v1     → academic-office console state (audit, batches, policies)
+ * `accounts.js` implementation is NOT rewritten: this module only calls its
+ * approved public helpers and never declares a credential field of its own.
+ * ------------------------------------------------------------------------- */
+const AUTH_DB_KEY = 'vyuh.mock.auth.v1'
+const PEOPLE_STATUSES = Object.freeze(['active', 'invited', 'suspended', 'locked', 'archived'])
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]{2,}$/
+const YEAR_RE = /^\d{2}$/
+
+const lowerEmail = (/** @type {unknown} */ value) => String(value ?? '').trim().toLowerCase()
+const upperRoll = (/** @type {unknown} */ value) => String(value ?? '').trim().toUpperCase()
+const titleOf = (/** @type {string} */ value) => value === 'faculty' ? 'Faculty' : 'Student'
+
+/* BATCH 3.1 (WS8 / R-4): privileged account-management mutations must be
+ * authorised at the SERVICE boundary, not only by the route guard. Reads and
+ * pre-existing admin console mutations keep their original behaviour; this
+ * check is applied ONLY to the Batch 3 account-management writes below.
+ * A missing, expired, malformed, faculty or student session is rejected. */
+function requireAdminActor() {
+  const session = readPersistedSession()
+  if (!session || session.user?.role !== 'admin') {
+    throw serviceError('forbidden', 'Only a signed-in Admin can manage institute accounts.', 403)
+  }
+  return { id: session.user.id || adminProfile.id, name: session.user.name || adminProfile.name }
+}
+
+/** Session-derived actor, with the seeded office seat as an honest fallback. */
+function adminActor() {
+  const session = readPersistedSession()
+  if (session?.user?.role === 'admin') {
+    return { id: session.user.id || adminProfile.id, name: session.user.name || adminProfile.name }
+  }
+  return { id: adminProfile.id, name: adminProfile.name }
+}
+
+/** @param {ReturnType<typeof instituteIdConfig>} config */
+function instituteConfigView(config = instituteIdConfig()) {
+  return {
+    year: config.year ?? null,
+    studentCreationAvailable: YEAR_RE.test(String(config.year ?? '')),
+    facultyCreationAvailable: true,
+  }
+}
+
+/** Canonical registry row → Admin People row. NEVER includes a credential. */
+function toPeopleRow(record) {
+  const batch = adminBatches.find((item) => item.id === record.batchId)
+  return {
+    id: record.instituteId ?? record.id,
+    name: record.name,
+    initials: record.initials,
+    email: record.email,
+    phone: record.phone ?? '',
+    role: record.role,
+    status: record.status,
+    batchId: record.batchId ?? null,
+    batchName: record.batchName ?? batch?.name ?? null,
+    rollNumber: record.rollNumber ?? null,
+    joinedAt: String(record.createdAt ?? '').slice(0, 10),
+    lastActiveAt: null,
+    instituteId: record.instituteId ?? null,
+    mustChangePassword: record.mustChangePassword === true,
+    credentialDelivery: record.credentialDelivery ?? 'not_applicable',
+    temporaryPasswordIssuedAt: record.temporaryPasswordIssuedAt ?? null,
+    statusChangedAt: record.statusChangedAt ?? null,
+    source: 'institute_issued',
+  }
+}
+
+/**
+ * Merged canonical roster. Legacy `adminUsers` fixtures and any pre-Batch-3
+ * `createdUsers` rows stay visible; a canonical row supersedes a legacy row
+ * with the same email or Institute ID. Demo fixtures are deliberately untouched.
+ */
+function roster(store) {
+  const canonical = Object.values(loadAccountsDb().accounts)
+    .filter((record) => record && record.source === 'institute_issued' && record.instituteId)
+    .map(toPeopleRow)
+  const ids = new Set(canonical.map((row) => String(row.instituteId).toUpperCase()))
+  const emails = new Set(canonical.map((row) => lowerEmail(row.email)))
+  const legacy = [...adminUsers, ...store.createdUsers].filter((row) => {
+    const email = lowerEmail(row.email)
+    const id = String(row.instituteId ?? row.id ?? '').toUpperCase()
+    if (email && emails.has(email)) return false
+    if (id && ids.has(id)) return false
+    return true
+  })
+  return [...legacy, ...canonical]
+}
+
+/** Faculty available for batch assignment: fixture roster + issued faculty. */
+function rosterFaculty() {
+  const issued = Object.values(loadAccountsDb().accounts)
+    .filter((record) => record && record.source === 'institute_issued' && record.role === 'faculty')
+    .map((record) => ({
+      id: record.instituteId,
+      name: record.name,
+      initials: record.initials,
+      email: record.email,
+      subjectIds: /** @type {string[]} */ ([]),
+      designation: 'Faculty member',
+      joinedAt: String(record.createdAt ?? '').slice(0, 10),
+      batchesTaught: 0,
+      status: /** @type {const} */ ('active'),
+    }))
+  return [...facultyRoster, ...issued]
+}
+
+/** Live seat counts and faculty names derived from the merged roster. */
+function batches(store) {
+  const people = roster(store)
+  return adminBatches.map((batch) => ({
+    ...batch,
+    studentCount: people.filter((person) => person.role === 'student' && person.batchId === batch.id).length,
+    facultyIds: store.batchFaculty[batch.id] ?? batch.facultyIds,
+    leadFacultyName: rosterFaculty().find((faculty) => faculty.id === (store.batchFaculty[batch.id] ?? batch.facultyIds)[0])?.name ?? 'Unassigned',
+    facultyNames: (store.batchFaculty[batch.id] ?? batch.facultyIds).map((id) => rosterFaculty().find((faculty) => faculty.id === id)?.name ?? id),
+  }))
+}
+
+/** @param {string} key @param {Record<string, unknown>} patch */
+function patchAccountRecord(key, patch, db = loadAccountsDb()) {
+  const record = db.accounts[key] ?? accountByIdentifier(key, db)
+  if (!record) return null
+  const updated = { ...record, ...patch }
+  saveAccountsDb({ ...db, accounts: { ...db.accounts, [record.key]: updated } })
+  return updated
+}
+
+/**
+ * Keep the loginable user projection in sync with Admin profile edits. Only
+ * metadata is touched — never a digest, salt or credential.
+ * @param {string} key @param {Record<string, unknown>} patch
+ */
+function patchAuthUser(key, patch) {
+  try {
+    const raw = localStorage.getItem(AUTH_DB_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    const entry = parsed?.accounts?.[key]
+    if (!entry?.user) return
+    entry.user = { ...entry.user, ...patch }
+    localStorage.setItem(AUTH_DB_KEY, JSON.stringify(parsed))
+  } catch { /* Best-effort mock storage; the registry remains the source of truth. */ }
+}
+
+/** Explicit unlock clears ONLY the failed-attempt counter (R-8). */
+function clearFailedAttempts(key) {
+  try {
+    const raw = localStorage.getItem(AUTH_DB_KEY)
+    if (!raw) return
+    const parsed = JSON.parse(raw)
+    if (!parsed?.attempts) return
+    delete parsed.attempts[key]
+    localStorage.setItem(AUTH_DB_KEY, JSON.stringify(parsed))
+  } catch { /* Best-effort mock storage. */ }
+}
+
+/* Atomic pre-validation + snapshot. A failure at any point restores the exact
+ * prior bytes of all three localStorage ledgers. This is a single-tab mock
+ * guarantee, not a transactional database: no cross-tab isolation is claimed. */
+function snapshotAccountStores() {
+  const read = (/** @type {string} */ key) => {
+    try { return localStorage.getItem(key) } catch { return null }
+  }
+  return {
+    [ACCOUNTS_STORAGE_KEY]: read(ACCOUNTS_STORAGE_KEY),
+    [AUTH_DB_KEY]: read(AUTH_DB_KEY),
+    [STORAGE_KEY]: read(STORAGE_KEY),
+  }
+}
+
+function restoreAccountStores(snapshot) {
+  const write = (/** @type {string} */ key, /** @type {string|null} */ value) => {
+    try {
+      if (value === null) localStorage.removeItem(key)
+      else localStorage.setItem(key, value)
+    } catch { /* Storage unavailable: report honestly, do not pretend success. */ }
+  }
+  for (const [key, value] of Object.entries(snapshot)) write(key, value)
+}
+
+/** Mock-only fault injection so the rollback contract is testable. */
+let accountWriteProbe = null
+/** @param {((phase: string) => void) | null} fn */
+export function setAccountWriteProbe(fn) {
+  accountWriteProbe = fn ?? null
+}
+
+/** @param {(probe: (phase: string) => void) => Promise<unknown>} operation */
+function withAccountSnapshot(operation) {
+  const snapshot = snapshotAccountStores()
+  const probe = (/** @type {string} */ phase) => { if (accountWriteProbe) accountWriteProbe(phase) }
+  return Promise.resolve()
+    .then(() => operation(probe))
+    .catch((error) => {
+      restoreAccountStores(snapshot)
+      throw error
+    })
+}
+
+/** @param {string} role */
+function assertYearConfigured(role) {
+  const config = instituteIdConfig()
+  if (role === 'student' && !YEAR_RE.test(String(config.year ?? ''))) {
+    throw serviceError('institute_year_not_configured', 'The institute must supply its two-digit year token before student accounts can be created. Configure it in Institute ID settings.', 409)
+  }
+}
+
+/**
+ * Institute-wide uniqueness. Email and roll number are checked against the
+ * merged roster, the canonical registry and the four demo seats.
+ * @param {string} email
+ * @param {string} rollNumber
+ * @param {{ excludeKey?: string }} [options]
+ */
+function assertIdentityAvailable(email, rollNumber, { excludeKey = '' } = {}) {
+  const normalised = lowerEmail(email)
+  if (!normalised || !EMAIL_RE.test(normalised)) throw serviceError('email_invalid', 'Enter a valid email address for this account.', 400)
+  const db = loadAccountsDb()
+  const candidates = [...roster(readStore()), ...Object.values(db.accounts), ...Object.values(fixtureUsers)]
+  const isOther = (/** @type {any} */ record) => {
+    const key = String(record?.key ?? '')
+    const id = String(record?.instituteId ?? record?.id ?? '')
+    return key !== excludeKey && id !== excludeKey
+  }
+  if (candidates.some((record) => isOther(record) && lowerEmail(record.email) === normalised)) {
+    throw serviceError('duplicate_email', 'That email already belongs to an institute account. Use a different address.', 409)
+  }
+  const roll = upperRoll(rollNumber)
+  if (roll) {
+    if (!/^[A-Z0-9][A-Z0-9-]{0,23}$/.test(roll)) throw serviceError('roll_number_invalid', 'Roll numbers may contain letters, digits and hyphens only (24 characters at most).', 400)
+    if (candidates.some((record) => isOther(record) && upperRoll(record.rollNumber) === roll && roll)) {
+      throw serviceError('duplicate_roll_number', 'That roll number is already assigned in this institute.', 409)
+    }
+  }
+}
+
+/** @param {string} accountKey */
+function issuedAccount(accountKey) {
+  const key = normalizeAccountKey(String(accountKey ?? ''))
+  const db = loadAccountsDb()
+  const record = key ? accountByIdentifier(key, db) : null
+  if (!record) throw notFound('account')
+  if (record.source !== 'institute_issued' || record.role === 'admin') {
+    throw serviceError('operation_not_available', 'This row is a demo fixture. Only institute-issued student and faculty accounts can be managed here.', 409)
+  }
+  return record
+}
+
+/** @param {unknown} value */
+function requiredReason(value) {
+  const reason = String(value ?? '').trim()
+  if (!reason) throw serviceError('reason_required', 'A reason is required. It is recorded in the audit ledger.', 400)
+  if (reason.length > 240) throw serviceError('reason_too_long', 'Keep the reason under 240 characters.', 400)
+  return reason
+}
+
+/** U-1 CSV credential row — transient, never persisted or cached. */
+function credentialRow(record, temporaryPassword) {
+  return {
+    instituteId: record.instituteId,
+    temporaryPassword,
+    role: record.role,
+    name: record.name,
+    batchName: record.batchName ?? null,
+  }
+}
 
 const VERSION = 1
 const DEFAULT_PAGE_SIZE = 25
@@ -125,38 +405,35 @@ function ledger(store) {
  * @param {string} input.summary
  * @param {string} [input.note]
  * @param {Record<string, unknown>} [input.meta]
+ * @param {string} [input.reason]            Batch 3: recorded reason, never a secret.
+ * @param {boolean} [input.requireReason]    Reject a missing reason service-side.
+ * @param {{ id: string, name: string }} [input.actor]
  * @returns {AuditEntry}
  */
-function recordAudit(store, { action, target, summary, note, meta }) {
+function recordAudit(store, { action, target, summary, note, meta, reason, requireReason = false, actor }) {
+  const reasonText = String(reason ?? '').trim()
+  if (requireReason && !reasonText) {
+    throw serviceError('audit_reason_required', 'A reason is required before this action can be recorded.', 400)
+  }
+  const who = actor ?? adminActor()
   store.auditSerial += 1
   const entry = {
     id: `aud-${2000 + store.auditSerial}`,
     at: nowIso(),
-    actorId: adminProfile.id,
-    actorName: adminProfile.name,
+    actorId: who.id,
+    actorName: who.name,
     actorRole: 'admin',
     action,
     target,
     summary,
-    note: note ?? '',
-    meta: meta ?? {},
+    note: note ?? reasonText,
+    meta: { ...(meta ?? {}), ...(reasonText ? { reason: reasonText } : {}) },
   }
   store.audit.unshift(entry)
   return entry
 }
 
-/** @param {AdminStore} store */
-function roster(store) {
-  return [...adminUsers, ...store.createdUsers]
-}
-
-/** @param {AdminStore} store */
-function batches(store) {
-  return adminBatches.map((batch) => ({
-    ...batch,
-    facultyIds: store.batchFaculty[batch.id] ?? batch.facultyIds,
-  }))
-}
+/* `roster()` and `batches()` live in the Batch 3 identity-bridge block above. */
 
 /** @param {AdminStore} store @param {string} id */
 function batchById(store, id) {
@@ -263,11 +540,11 @@ function userFacets(users) {
       { value: 'faculty', label: 'Faculty', count: count(users.filter((user) => user.role === 'faculty')) },
       { value: 'admin', label: 'Academic office', count: count(users.filter((user) => user.role === 'admin')) },
     ],
-    statuses: [
-      { value: 'active', label: 'Active', count: count(users.filter((user) => user.status === 'active')) },
-      { value: 'invited', label: 'Invited', count: count(users.filter((user) => user.status === 'invited')) },
-      { value: 'suspended', label: 'Suspended', count: count(users.filter((user) => user.status === 'suspended')) },
-    ],
+    statuses: PEOPLE_STATUSES.map((status) => ({
+      value: status,
+      label: accountStatusLabels[status] ?? status[0].toUpperCase() + status.slice(1),
+      count: count(users.filter((user) => user.status === status)),
+    })),
     batches: adminBatches.map((batch) => ({
       value: batch.id,
       label: batch.name,
@@ -402,6 +679,8 @@ export const adminService = {
           admins: all.filter((user) => user.role === 'admin').length,
           invited: all.filter((user) => user.status === 'invited').length,
           suspended: all.filter((user) => user.status === 'suspended').length,
+          locked: all.filter((user) => user.status === 'locked').length,
+          archived: all.filter((user) => user.status === 'archived').length,
         },
       }
     })
@@ -433,8 +712,16 @@ export const adminService = {
     }, { min: 120, max: 320 })
   },
 
+  /**
+   * BATCH 3 (WS8) — import-to-account bridge. Every ready row becomes a real,
+   * loginable `institute_issued` account with a real Institute ID and a
+   * transient one-time credential. No `invited` placeholder rows are written.
+   * Pre-validation happens BEFORE any write; `withAccountSnapshot` rolls the
+   * three ledgers back if any later step fails.
+   */
   commitImport(_adminId, input) {
-    return simulate(() => {
+    return simulate(() => withAccountSnapshot(async (probe) => {
+      requireAdminActor()
       const store = readStore()
       const preview = validateImport({
         csv: input?.csv ?? '',
@@ -457,53 +744,80 @@ export const adminService = {
       }
 
       const byName = new Map(batches(store).map((batch) => [batch.name, batch]))
-      /** @type {Array<{ line: number, user: AdminUser }>} */
-      const created = []
+      const config = instituteConfigView()
+      /** @type {Array<{ values: Record<string, string>, role: 'student'|'faculty', batchId: string|null, batchName: string|null }>} */
+      const prepared = []
+      const seenEmails = new Set()
+      const seenRolls = new Set()
+
+      /* Pass 1 — pre-validate everything before the first write. */
       for (const row of preview.rows) {
         if (row.status !== 'ready') continue
-        store.importSerial += 1
-        const serial = String(store.importSerial).padStart(4, '0')
-        const role = row.values.role === 'faculty' ? 'faculty' : 'student'
-        const batch = row.values.batch ? byName.get(row.values.batch) : null
-        created.push({
-          line: row.line,
-          user: {
-            id: `${role === 'faculty' ? 'fac' : 'stu'}-imp-${serial}`,
-            name: row.values.name,
-            initials: initialsFor(row.values.name),
-            email: row.values.email,
-            phone: row.values.phone ? `+91${row.values.phone}` : '',
-            role,
-            status: 'invited',
-            batchId: role === 'student' ? batch?.id ?? null : null,
-            batchName: role === 'student' ? batch?.name ?? null : null,
-            rollNumber: row.values.rollNumber || null,
-            joinedAt: row.values.joinedAt || dateOnly(nowIso()),
-            lastActiveAt: null,
-          },
+        const role = /** @type {'student'|'faculty'} */ (row.values.role === 'faculty' ? 'faculty' : 'student')
+        if (role === 'student' && !config.studentCreationAvailable) {
+          throw serviceError('institute_year_not_configured', 'Student rows need the institute-supplied year token. Configure it in Institute ID settings before committing.', 409)
+        }
+        const email = lowerEmail(row.values.email)
+        const roll = upperRoll(row.values.rollNumber)
+        if (seenEmails.has(email)) throw serviceError('duplicate_email', `Sheet line ${row.line}: ${email} appears twice in this file.`, 409)
+        if (roll && seenRolls.has(roll)) throw serviceError('duplicate_roll_number', `Sheet line ${row.line}: ${roll} appears twice in this file.`, 409)
+        assertIdentityAvailable(email, roll)
+        const batch = role === 'student' && row.values.batch ? byName.get(row.values.batch) : null
+        if (role === 'student' && !batch) throw serviceError('batch_required', `Sheet line ${row.line}: choose a batch from the batch list.`, 400)
+        seenEmails.add(email)
+        if (roll) seenRolls.add(roll)
+        prepared.push({
+          values: { ...row.values },
+          role,
+          batchId: batch?.id ?? null,
+          batchName: batch?.name ?? null,
         })
       }
 
-      store.createdUsers.push(...created.map((entry) => entry.user))
+      probe('pre-validated')
+      const created = []
+      const credentials = []
+      for (let index = 0; index < prepared.length; index += 1) {
+        const entry = prepared[index]
+        const values = instituteAccountInputSchema.parse({
+          role: entry.role,
+          name: entry.values.name,
+          email: entry.values.email,
+          phone: entry.values.phone || undefined,
+          batchId: entry.batchId ?? undefined,
+          batchName: entry.batchName ?? undefined,
+        })
+        probe(`provision-${index + 1}`)
+        const provisioned = await provisionInstituteAccount(values)
+        const patched = patchAccountRecord(provisioned.account.key, {
+          rollNumber: entry.values.rollNumber || null,
+          phone: entry.values.phone || null,
+        })
+        created.push({ name: values.name, account: patched ?? provisioned.account })
+        credentials.push(credentialRow(patched ?? provisioned.account, provisioned.credentials.temporaryPassword))
+      }
 
+      probe('provisioned')
       const audit = recordAudit(store, {
-        action: 'import.commit',
+        action: 'user.import',
         target: input?.fileName || 'Pasted CSV',
         summary: `${created.length} account${created.length === 1 ? '' : 's'} created from ${input?.fileName || 'a pasted sheet'}; ${preview.summary.skipped} row${preview.summary.skipped === 1 ? '' : 's'} skipped.`,
-        note: `Columns mapped: ${Object.entries(input?.mapping ?? {}).filter(([, header]) => header).map(([field]) => field).join(', ')}.`,
+        reason: `CSV account import committed by ${adminActor().name}.`,
+        requireReason: true,
         meta: { created: created.length, skipped: preview.summary.skipped, fileName: input?.fileName ?? null },
       })
 
       writeStore(store)
-
       return {
         created: created.length,
         skipped: preview.summary.skipped,
         invalid: preview.summary.invalid,
-        names: created.map((entry) => entry.user.name),
+        names: created.map((entry) => entry.name),
         auditId: audit.id,
+        /* TRANSIENT: returned in memory only; never cached, logged or persisted. */
+        credentials,
       }
-    })
+    }))
   },
 
   /* ── Batches ─────────────────────────────────────────────────────────── */
@@ -517,9 +831,9 @@ export const adminService = {
         .sort((a, b) => (a.status === b.status ? b.studentCount - a.studentCount : a.status === 'active' ? -1 : 1))
         .map((batch) => ({
           ...batch,
-          leadFacultyName: facultyRoster.find((faculty) => faculty.id === batch.facultyIds[0])?.name ?? 'Unassigned',
+          leadFacultyName: rosterFaculty().find((faculty) => faculty.id === batch.facultyIds[0])?.name ?? 'Unassigned',
           facultyNames: batch.facultyIds
-            .map((id) => facultyRoster.find((faculty) => faculty.id === id)?.name ?? id)
+            .map((id) => rosterFaculty().find((faculty) => faculty.id === id)?.name ?? id)
             .filter(Boolean),
         }))
     })
@@ -536,7 +850,11 @@ export const adminService = {
         .filter((user) => user.batchId === batch.id)
         .sort((a, b) => String(a.rollNumber ?? '').localeCompare(String(b.rollNumber ?? '')))
         .map((user, index) => {
-          const attendancePercent = 62 + ((index * 7) % 37)
+          /* BATCH 3.1 (WS9 / R-5): a real institute-issued student has NO
+             attendance records yet. Never invent a percentage from the row's
+             position in the roster; report an honest unavailable value. The
+             seeded demo members keep their existing illustrative figures. */
+          const attendancePercent = user.source === 'institute_issued' ? null : 62 + ((index * 7) % 37)
           return {
             id: user.id,
             name: user.name,
@@ -550,10 +868,10 @@ export const adminService = {
         })
 
       const faculty = batch.facultyIds
-        .map((id) => facultyRoster.find((candidate) => candidate.id === id))
+        .map((id) => rosterFaculty().find((candidate) => candidate.id === id))
         .filter(Boolean)
 
-      const availableFaculty = facultyRoster
+      const availableFaculty = rosterFaculty()
         .filter((candidate) => !batch.facultyIds.includes(candidate.id))
         .sort((a, b) => a.name.localeCompare(b.name))
 
@@ -564,7 +882,7 @@ export const adminService = {
           name: subject?.name ?? subjectId,
           shortName: subject?.shortName ?? subjectId,
           chapterCount: chapters.filter((chapter) => chapter.subjectId === subjectId).length,
-          facultyIds: batch.facultyIds.filter((id) => facultyRoster.find((candidate) => candidate.id === id)?.subjectIds.includes(subjectId)),
+          facultyIds: batch.facultyIds.filter((id) => rosterFaculty().find((candidate) => candidate.id === id)?.subjectIds.includes(subjectId)),
         }
       })
 
@@ -576,8 +894,8 @@ export const adminService = {
         availableFaculty,
         summary: {
           sessionsHeld: batch.status === 'archived' ? 34 : 42,
-          averageAttendance: batch.attendancePercent,
-          defaulters: members.filter((member) => member.attendancePercent < threshold).length,
+          averageAttendance: members.some((member) => member.attendancePercent === null) ? null : batch.attendancePercent,
+          defaulters: members.filter((member) => typeof member.attendancePercent === 'number' && member.attendancePercent < threshold).length,
           questionsAuthored: batch.examCount * 75,
         },
       }
@@ -592,7 +910,7 @@ export const adminService = {
 
       const unique = [...new Set((facultyIds ?? []).map(String))]
       if (unique.length === 0) throw serviceError('faculty_required', 'A batch needs at least one faculty member assigned. Add one before saving.', 400)
-      const unknown = unique.filter((id) => !facultyRoster.some((faculty) => faculty.id === id))
+      const unknown = unique.filter((id) => !rosterFaculty().some((faculty) => faculty.id === id))
       if (unknown.length > 0) throw serviceError('faculty_unknown', `That faculty member is not on the roster: ${unknown.join(', ')}.`, 400)
 
       const before = batch.facultyIds
@@ -600,7 +918,7 @@ export const adminService = {
       const removed = before.filter((id) => !unique.includes(id))
       store.batchFaculty[batchId] = unique
 
-      const nameOf = (id) => facultyRoster.find((faculty) => faculty.id === id)?.name ?? id
+      const nameOf = (id) => rosterFaculty().find((faculty) => faculty.id === id)?.name ?? id
       const parts = []
       if (added.length) parts.push(`${added.map(nameOf).join(', ')} added`)
       if (removed.length) parts.push(`${removed.map(nameOf).join(', ')} removed`)
@@ -1071,5 +1389,288 @@ export const adminService = {
       writeStore(store)
       return clone(next)
     })
+  },
+
+  /* ── Batch 3 — Institute ID configuration (Admin only) ───────────────── */
+
+  getInstituteIdConfig(_adminId) {
+    return simulate(() => instituteConfigView(), { min: 60, max: 140 })
+  },
+
+  configureInstituteIds(_adminId, input) {
+    return simulate(() => {
+      requireAdminActor()
+      const raw = input?.year
+      const year = raw === null || raw === undefined || String(raw).trim() === '' ? null : String(raw).trim()
+      if (year !== null && !YEAR_RE.test(year)) {
+        throw serviceError('year_token_invalid', 'The year token is exactly two digits supplied by the institute, for example 26.', 400)
+      }
+      configureInstituteIds({ year })
+      return instituteConfigView()
+    }, { min: 80, max: 180 })
+  },
+
+  /** Non-mutating preview: uses issueInstituteId() without saving anything. */
+  previewInstituteId(_adminId, input) {
+    return simulate(() => {
+      const role = input?.role
+      if (role !== 'student' && role !== 'faculty') {
+        throw serviceError('role_invalid', 'Choose student or faculty. Admin seats are not issued here.', 400)
+      }
+      const allocation = issueInstituteId(role, loadAccountsDb())
+      return {
+        ok: allocation.ok,
+        instituteId: allocation.instituteId ?? null,
+        code: allocation.code,
+        message: allocation.message,
+      }
+    }, { min: 60, max: 140 })
+  },
+
+  /* ── Batch 3 — Creation (WS5) ────────────────────────────────────────── */
+
+  createUser(_adminId, input) {
+    return simulate(() => withAccountSnapshot(async (probe) => {
+      requireAdminActor()
+      const role = input?.role
+      if (role !== 'student' && role !== 'faculty') {
+        throw serviceError('role_invalid', 'Choose student or faculty. Admin-created Admin accounts are out of scope.', 400)
+      }
+      assertYearConfigured(role)
+      /* Validate identity FIRST so an invalid address or a duplicate is rejected
+         with a stable service error and no Institute ID is ever allocated. */
+      const email = lowerEmail(input?.email)
+      const roll = upperRoll(input?.rollNumber)
+      assertIdentityAvailable(email, roll)
+      const values = instituteAccountInputSchema.parse({
+        role,
+        name: input?.name ?? '',
+        email: input?.email ?? '',
+        phone: input?.phone || undefined,
+      })
+
+      let batchId = null
+      let batchName = null
+      if (role === 'student') {
+        const batch = adminBatches.find((item) => item.id === input?.batchId && item.status === 'active')
+        if (!batch) throw serviceError('batch_required', 'Choose an active batch for this student.', 400)
+        batchId = batch.id
+        batchName = batch.name
+      }
+
+      probe('pre-validated')
+      const provisioned = await provisionInstituteAccount({ ...values, batchId: batchId ?? undefined, batchName: batchName ?? undefined })
+      const patched = patchAccountRecord(provisioned.account.key, {
+        rollNumber: roll || null,
+        phone: values.phone || null,
+      })
+      const record = patched ?? provisioned.account
+      probe('provisioned')
+
+      const store = readStore()
+      const audit = recordAudit(store, {
+        action: 'user.create',
+        target: `${record.name} · ${record.instituteId}`,
+        summary: `${titleOf(role)} account created for ${record.name}${batchName ? ` in ${batchName}` : ''}. One-time credentials shown; first-login password change required.`,
+        reason: `Institute ${role} account created by ${adminActor().name}.`,
+        requireReason: true,
+        meta: { instituteId: record.instituteId, role, batchId, rollNumber: roll || null },
+      })
+      writeStore(store)
+
+      return {
+        account: toPeopleRow(record),
+        credentials: [credentialRow(record, provisioned.credentials.temporaryPassword)],
+        auditId: audit.id,
+      }
+    }))
+  },
+
+  /** Credential sheet was displayed → metadata only. NEVER stores a value. */
+  markCredentialsShown(_adminId, input) {
+    return simulate(() => {
+      requireAdminActor()
+      const keys = Array.isArray(input?.accountKeys) ? input.accountKeys.map((key) => normalizeAccountKey(String(key))) : []
+      const db = loadAccountsDb()
+      let updated = 0
+      const accounts = { ...db.accounts }
+      for (const key of keys) {
+        const record = key ? accountByIdentifier(key, db) : null
+        if (!record || record.credentialDelivery !== 'pending') continue
+        accounts[record.key] = { ...record, credentialDelivery: 'shown' }
+        updated += 1
+      }
+      if (updated > 0) saveAccountsDb({ ...db, accounts })
+      return { updated }
+    }, { min: 40, max: 100 })
+  },
+
+  /* ── Batch 3 — Lifecycle (WS6) ───────────────────────────────────────── */
+
+  applyAccountOperation(_adminId, operation, input) {
+    return simulate(() => withAccountSnapshot(async (probe) => {
+      requireAdminActor()
+      const actions = {
+        suspend: { action: 'user.suspend', next: 'suspended', from: ['active'], label: 'suspended' },
+        reactivate: { action: 'user.reactivate', next: 'active', from: ['suspended'], label: 'reactivated' },
+        /* Batch 2 ALLOWED_TRANSITIONS permits active→locked only; suspended→locked
+           is NOT a legal transition. Do not offer or accept it (Gate 0 D-3). */
+        lock: { action: 'user.lock', next: 'locked', from: ['active'], label: 'locked' },
+        /* Unlock is the ONE approved action that clears a failed-attempt
+           lockout. It also lifts a `locked` registry status when present. */
+        unlock: { action: 'user.unlock', next: 'active', from: ['active', 'suspended', 'locked'], label: 'unlocked' },
+        archive: { action: 'user.archive', next: 'archived', from: ['active', 'suspended', 'locked'], label: 'archived' },
+      }
+      const spec = actions[/** @type {keyof typeof actions} */ (operation)]
+      if (!spec) throw serviceError('operation_invalid', 'That account operation is not supported.', 400)
+      const reason = requiredReason(input?.reason)
+      if (operation === 'archive' && input?.acknowledged !== true) {
+        throw serviceError('archive_confirmation_required', 'Confirm the irreversible archive acknowledgement before continuing.', 409)
+      }
+      const record = issuedAccount(input?.accountKey)
+      if (record.status === 'archived' && operation !== 'archive') {
+        throw serviceError('account_archived', 'An archived account is terminal. Its Institute ID is never reused.', 409)
+      }
+      if (!spec.from.includes(record.status)) {
+        throw serviceError('status_transition_invalid', `A ${accountStatusLabels[record.status] ?? record.status} account cannot be ${spec.label}.`, 409)
+      }
+
+      probe('pre-validated')
+      /** @type {any} */
+      let updated = record
+      if (operation === 'unlock') {
+        /* R-8: re-issue/recovery NEVER clears this; only this explicit action does.
+           A `locked` status is lifted, an active/suspended account simply has its
+           failed-attempt counter cleared without a redundant status change. */
+        clearFailedAttempts(record.key)
+        if (record.status === 'locked') {
+          const result = transitionAccountStatus(record.key, 'active', loadAccountsDb())
+          if (!result.ok) throw serviceError('status_transition_invalid', 'That status change is not permitted.', 409)
+          updated = result.account
+        } else {
+          updated = accountByIdentifier(record.key, loadAccountsDb()) ?? record
+        }
+      } else {
+        const result = transitionAccountStatus(record.key, spec.next, loadAccountsDb())
+        if (!result.ok) throw serviceError('status_transition_invalid', 'That status change is not permitted.', 409)
+        updated = result.account
+      }
+      probe('transitioned')
+
+      const store = readStore()
+      const audit = recordAudit(store, {
+        action: spec.action,
+        target: `${updated.name} · ${updated.instituteId}`,
+        summary: `${titleOf(updated.role)} account ${spec.label}. Status: ${accountStatusLabels[record.status] ?? record.status} → ${accountStatusLabels[spec.next]}.`,
+        reason,
+        requireReason: true,
+        meta: { instituteId: updated.instituteId, from: record.status, to: spec.next },
+      })
+      writeStore(store)
+      /* D-2: `transitionAccountStatus()` returns a SAFE_ACCOUNT_FIELDS
+         projection, which intentionally omits `phone`. Re-read the CANONICAL
+         registry record so the operation result carries the same phone as the
+         account list. `SAFE_ACCOUNT_FIELDS` is NOT broadened and the registry
+         is unchanged. */
+      const current = accountByIdentifier(record.key, loadAccountsDb()) ?? record
+      return { account: toPeopleRow(current), auditId: audit.id }
+    }))
+  },
+
+  /** Editable fields only; immutable instituteId/source/role are never accepted. */
+  editAccount(_adminId, input) {
+    return simulate(() => withAccountSnapshot(async (probe) => {
+      requireAdminActor()
+      const reason = requiredReason(input?.reason)
+      const record = issuedAccount(input?.accountKey)
+      if (record.status === 'archived') throw serviceError('account_archived', 'An archived account cannot be edited.', 409)
+
+      const name = input?.name === undefined ? record.name : String(input.name).trim()
+      if (name.length < 2 || name.length > 80) throw serviceError('name_invalid', 'Enter a name between 2 and 80 characters.', 400)
+      const email = input?.email === undefined ? lowerEmail(record.email) : lowerEmail(input.email)
+      const phone = input?.phone === undefined ? (record.phone ?? null) : String(input.phone).trim() || null
+      const roll = input?.rollNumber === undefined
+        ? (record.rollNumber ?? null)
+        : (String(input.rollNumber).trim() ? upperRoll(input.rollNumber) : null)
+      assertIdentityAvailable(email, roll ?? '', { excludeKey: record.key })
+
+      probe('pre-validated')
+      const updated = patchAccountRecord(record.key, { name, email, phone, rollNumber: roll }) ?? record
+      patchAuthUser(record.key, { name, email, phone: phone ?? undefined })
+      probe('updated')
+
+      const store = readStore()
+      const audit = recordAudit(store, {
+        action: 'user.edit',
+        target: `${updated.name} · ${updated.instituteId}`,
+        summary: `Profile edited for ${updated.name}. Institute ID and role are unchanged.`,
+        reason,
+        requireReason: true,
+        meta: { instituteId: updated.instituteId, fields: ['name', 'email', 'phone', 'rollNumber'] },
+      })
+      writeStore(store)
+      return { account: toPeopleRow(updated), auditId: audit.id }
+    }))
+  },
+
+  /** Dedicated batch move; past academic history is intentionally preserved. */
+  moveStudentBatch(_adminId, input) {
+    return simulate(() => withAccountSnapshot(async (probe) => {
+      requireAdminActor()
+      const reason = requiredReason(input?.reason)
+      const record = issuedAccount(input?.accountKey)
+      if (record.role !== 'student') throw serviceError('role_invalid', 'Only student accounts have a batch assignment.', 409)
+      if (record.status === 'archived') throw serviceError('account_archived', 'An archived account cannot be moved.', 409)
+      const batch = adminBatches.find((item) => item.id === input?.batchId && item.status === 'active')
+      if (!batch) throw serviceError('batch_required', 'Choose an active destination batch.', 400)
+      if (record.batchId === batch.id) throw serviceError('batch_unchanged', 'This student is already in that batch.', 409)
+
+      probe('pre-validated')
+      const updated = patchAccountRecord(record.key, { batchId: batch.id, batchName: batch.name }) ?? record
+      patchAuthUser(record.key, { batchId: batch.id, batchName: batch.name })
+      probe('updated')
+
+      const store = readStore()
+      const audit = recordAudit(store, {
+        action: 'user.batch.move',
+        target: `${updated.name} · ${updated.instituteId}`,
+        summary: `Batch changed from ${record.batchName ?? 'no batch'} to ${batch.name}. Existing history is preserved.`,
+        reason,
+        requireReason: true,
+        meta: { instituteId: updated.instituteId, fromBatchId: record.batchId ?? null, toBatchId: batch.id },
+      })
+      writeStore(store)
+      return { account: toPeopleRow(updated), auditId: audit.id }
+    }))
+  },
+
+  /** U-5 recovery: delegates ALL credential writes to the additive auth helper. */
+  reissueTemporaryPassword(_adminId, input) {
+    return simulate(() => withAccountSnapshot(async (probe) => {
+      requireAdminActor()
+      const reason = requiredReason(input?.reason)
+      const record = issuedAccount(input?.accountKey)
+      if (record.status === 'archived') throw serviceError('account_archived', 'An archived account cannot receive a new credential.', 409)
+
+      probe('pre-validated')
+      const reissued = await issueTemporaryPassword({ targetAccountKey: record.key, reason, actorId: adminActor().id })
+      probe('reissued')
+
+      const store = readStore()
+      const audit = recordAudit(store, {
+        action: 'user.credential.reissue',
+        target: `${record.name} · ${record.instituteId}`,
+        summary: `A new temporary password was issued for ${record.name} and shown once. First-login password change is required again; lockout state was not cleared.`,
+        reason,
+        requireReason: true,
+        meta: { instituteId: record.instituteId, clearAttempts: false },
+      })
+      writeStore(store)
+      return {
+        account: toPeopleRow(accountByIdentifier(record.key, loadAccountsDb()) ?? reissued.account),
+        credentials: [credentialRow(record, reissued.credentials.temporaryPassword)],
+        auditId: audit.id,
+      }
+    }))
   },
 }

@@ -8,13 +8,15 @@ import { questions } from '../../src/mock-data/questions.js'
 import { calculateWhatIf, countFilters, filterQuestions } from '../../src/shared/lib/analysisMath.js'
 import { analysisService } from '../../src/services/mock/analysis.js'
 import { examAnalysisSchema } from '../../src/services/api/schemas.js'
+import { signInDemoStudent } from '../helpers/workspaceIdentity.js'
 
 vi.mock('../../src/mock-data/latency.js', async (importOriginal) => {
   const actual = await importOriginal()
   return { ...actual, simulate: (produce) => Promise.resolve().then(produce).then((value) => structuredClone(value)) }
 })
 
-beforeEach(() => localStorage.clear())
+/* BATCH 3.2: `stu-ananya` requires a real, valid, matching demo session. */
+beforeEach(async () => { localStorage.clear(); await signInDemoStudent() })
 
 describe('analysis fixture arithmetic', () => {
   it('derives summary, filters and what-if from the same rows', () => {

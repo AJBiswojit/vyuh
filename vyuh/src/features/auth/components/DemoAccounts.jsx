@@ -1,8 +1,7 @@
 import { useState } from 'react'
 import { ArrowRight, FlaskConical, GraduationCap, Presentation, ShieldCheck } from 'lucide-react'
-import { demoSeats, demoScenarios, demoCredentials, demoInviteCode, isMockMode } from '@/shared/lib/services.js'
+import { demoSeats, demoScenarios, demoCredentials, isMockMode } from '@/shared/lib/services.js'
 import { roleLabel } from '@/shared/lib/roles.js'
-import { AuthLink } from './AuthLink.jsx'
 
 const ICONS = { student: GraduationCap, faculty: Presentation, admin: ShieldCheck }
 /** @param {{ onSelect: (seat: { email: string, role: import('../../../contracts/user.js').Role }) => void, onScenario: (email: string) => void, disabled?: boolean }} props */
@@ -38,7 +37,8 @@ export function DemoAccounts({ onSelect, onScenario, disabled }) {
           <div className="mt-1 flex flex-wrap gap-x-4">
             {demoScenarios.map((scenario) => <button key={scenario.email} type="button" disabled={disabled} onClick={() => onScenario(scenario.email)} className="min-h-11 rounded-xs text-xs font-[560] text-heading underline decoration-line-strong underline-offset-4 hover:decoration-ember">{scenario.label}</button>)}
           </div>
-          <AuthLink to={`/join/${demoInviteCode}`} className="text-xs">Open a sample faculty invitation</AuthLink>
+          {/* The retired invitation route is no longer linked from the demo panel. */}
+          <p className="mt-2 text-2xs leading-relaxed text-faint">Institute accounts are issued by the academic office, not created here.</p>
         </div>
       ) : null}
     </section>

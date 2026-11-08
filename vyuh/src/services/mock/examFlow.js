@@ -1,9 +1,9 @@
 import {
-  exams, users, currentStudent, authoredSections, buildQuestionBank,
-  configuredQuestionCount, NEET_PRACTICE_EXAM_ID, simulate,
+  exams, currentStudent, configuredQuestionCount, simulate,
+  examDefinitionById, authoredQuestionsFor, examSectionsFor, EXAM_UNAVAILABLE_REASON,
 } from '../../mock-data/index.js'
-import { readPersistedSession } from '../../shared/lib/sessionPersistence.js'
-import { notFound } from './errors.js'
+import { notFound, serviceError } from './errors.js'
+import { requireStudentWorkspace, requireSessionWorkspace } from './ownWorkspace.js'
 
 /** @typedef {import('../types.js').ExamFlowService} ExamFlowService */
 /** @typedef {import('../../contracts/exam.js').ExamPaper} ExamPaper */
@@ -32,25 +32,38 @@ function readNumber(key, fallback, min, max) {
     return Number.isFinite(parsed) ? Math.max(min, Math.min(max, parsed)) : fallback
   } catch { return fallback }
 }
+/** BATCH 3.2 (F-01 / F-02): resolve the candidate ONLY through the shared
+ * fail-closed boundary. Unknown, forged, sessionless and mismatched identities
+ * throw `not_found`; demo seats keep their exact seeded name/roll. */
 /** @param {string} studentId */
 function candidate(studentId) {
-  if (studentId === currentStudent.id) return { name: currentStudent.name, rollNumber: currentStudent.rollNumber }
-  const session = readPersistedSession()
-  if (session?.user?.id === studentId && session.user.role === 'student') return { name: session.user.name, rollNumber: 'Pending allotment' }
-  const account = users[studentId]
-  if (account?.role === 'student') return { name: account.name, rollNumber: 'Pending allotment' }
-  throw notFound('student')
+  const scope = requireStudentWorkspace(studentId)
+  if (scope.kind === 'demo') return { name: currentStudent.name, rollNumber: currentStudent.rollNumber }
+  return { name: scope.record?.name ?? 'Student', rollNumber: scope.record?.rollNumber ?? 'Pending allotment' }
 }
-/** @param {string} examId */
+/* BATCH 3.1 (WS1 / WS6): an institute-issued account has no demo exam paper,
+ * attempt or submission. Fail closed with an honest unavailable result. */
+/** @param {string} studentId */
+function denyIssuedExam(studentId) {
+  /* BATCH 3.2: requireStudentWorkspace throws `not_found` for invalid
+     identities before any fixture can be read. */
+  const scope = requireStudentWorkspace(studentId)
+  if (scope.kind === 'issued') {
+    throw serviceError('exam_unavailable', 'No examination is published for this account yet. Your academic office has not assigned a paper.', 404)
+  }
+}
+
+/**
+ * Resolve an exam against the shared registry. The gate is now data-driven:
+ * any paper with an authored question set is playable, and a ledger-only paper
+ * gets a plain-words explanation instead of a NEET-specific hard-coded check.
+ * @param {string} examId
+ */
 function findExam(examId) {
   const exam = exams.find((item) => item.id === examId)
-  if (!exam) throw notFound('exam')
-  if (exam.id !== NEET_PRACTICE_EXAM_ID) {
-    const error = new Error('The Phase 4 demo player is published for NEET Practice 01. Other papers keep their Phase 3 ledger surfaces.')
-    error.name = 'ServiceError'
-    Object.assign(error, { code: 'paper_unavailable', status: 404, retryable: false })
-    throw error
-  }
+  const definition = examDefinitionById(examId)
+  if (!exam || !definition) throw notFound('exam')
+  if (!definition.playable) throw serviceError('paper_not_playable', definition.unavailableReason ?? EXAM_UNAVAILABLE_REASON, 404)
   const count = configuredQuestionCount()
   const durationSeconds = readNumber(DURATION_KEY, exam.durationMinutes * 60, 3, 6 * 3600)
   return { ...exam, questionCount: count, maxMarks: count * 4, durationMinutes: Math.max(1, Math.ceil(durationSeconds / 60)) }
@@ -70,11 +83,12 @@ function counts(entries, questionIds) {
 export const examFlowService = {
   getPaper(examId, studentId) {
     return simulate(() => {
+      denyIssuedExam(studentId)
       const exam = findExam(examId)
       const person = candidate(studentId)
-      const authored = buildQuestionBank(exam.questionCount)
+      const authored = authoredQuestionsFor(examId, exam.questionCount)
       const questions = authored.map(({ correctOptions: _correctOptions, correctNumeric: _correctNumeric, explanation: _explanation, ...question }) => question)
-      const sections = authoredSections.map((section) => ({ ...section, questionIds: questions.filter((q) => q.sectionId === section.id).map((q) => q.id) }))
+      const sections = examSectionsFor(examId, questions)
       const offsetMs = serverOffset()
       const durationSeconds = readNumber(DURATION_KEY, exam.durationMinutes * 60, 3, 6 * 3600)
       return /** @type {ExamPaper} */ ({
@@ -99,6 +113,7 @@ export const examFlowService = {
         Object.assign(error, { code: 'declaration_required', status: 400, retryable: false })
         throw error
       }
+      denyIssuedExam(input.studentId)
       const exam = findExam(input.examId)
       candidate(input.studentId)
       const offsetMs = serverOffset()
@@ -114,6 +129,13 @@ export const examFlowService = {
   },
   syncAttempt(input) {
     return simulate(() => {
+      /* BATCH 3.2: a missing / expired / malformed / wrong-role session throws
+         `not_found` BEFORE any write; an issued session is unavailable; only a
+         valid matching demo session may persist demo sync state. */
+      const scope = requireSessionWorkspace('student')
+      if (scope.kind === 'issued') {
+        throw serviceError('exam_unavailable', 'No examination is published for this account yet.', 404)
+      }
       const all = readJson(SYNC_KEY, {})
       all[input.attemptId] = { revision: input.revision, syncedAt: new Date().toISOString(), entries: input.entries }
       writeJson(SYNC_KEY, all)
@@ -122,8 +144,9 @@ export const examFlowService = {
   },
   submitAttempt(input) {
     return simulate(() => {
+      denyIssuedExam(input.studentId)
       const exam = findExam(input.examId)
-      const paper = buildQuestionBank(exam.questionCount)
+      const paper = authoredQuestionsFor(input.examId, exam.questionCount)
       const statusCounts = counts(input.entries, paper.map((q) => q.id))
       /** @type {ExamSubmissionReceipt} */
       const receipt = {

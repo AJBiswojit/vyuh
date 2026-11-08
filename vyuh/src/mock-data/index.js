@@ -26,7 +26,25 @@ export { simulate, clone, errorsEnabled, errorRate, readFlag } from './latency.j
 
 export { questions, buildQuestionBank, authoredSections, configuredQuestionCount, NEET_PRACTICE_EXAM_ID, DEFAULT_QUESTION_COUNT } from './questions.js'
 
+/* Shared exam registry: which papers have authored question sets (Batch 1). */
+export {
+  EXAM_QUESTION_SETS, EXAM_UNAVAILABLE_REASON, examDefinitions, examDefinitionById,
+  isPlayableExam, listPlayableExams, listUnplayableExams, authoredQuestionsFor,
+  gradingQuestionsFor, examSectionsFor, seededAttemptFor, withExamDefinition,
+} from './examDefinitions.js'
+
 export { analysisFixture, analysisFixtureMeta, perQuestionAnalysis, cohortDistribution, timeStatistics, mistakeCategories, releasePolicy, attemptTrend, buildAnalysisFromSubmission, buildTopicRevision } from './analysis.js'
+
+/* Batch 2: single institute-wide identity registry (no secrets of any kind). */
+export {
+  ACCOUNTS_STORAGE_KEY, ACCOUNTS_DB_VERSION, ACCOUNT_STATUSES, accountStatusLabels,
+  INSTITUTE_ID_FORMATS, credentialPolicy, DEFAULT_INSTITUTE_ID_CONFIG,
+  initialAccountsDb, loadAccountsDb, saveAccountsDb, configureInstituteIds, instituteIdConfig,
+  parseInstituteId, isInstituteId, normalizeAccountKey, highestExistingSuffix, issueInstituteId,
+  projectSafeAccount, listAccounts, accountByIdentifier, transitionAccountStatus,
+  createAccountAuditEntry, appendAccountAudit, defaultRandomBytes, generateTemporaryPassword,
+  isPolicyTemporaryPassword,
+} from './accounts.js'
 
 /* ── Phase 7: faculty workspace ────────────────────────────────────────── */
 export {

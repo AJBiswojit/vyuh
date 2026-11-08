@@ -5,6 +5,7 @@ import { PageHeader } from '@/app/layouts/WorkspaceLayout.jsx'
 import { Badge, Button, Card, EmptyState, ErrorState, Skeleton, Tabs, Tab, TabList, TabPanel } from '@/shared/ui'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle.js'
 import { formatDateTime, formatMarks } from '@/shared/lib/format.js'
+import { canShowResultSheet } from '@/shared/lib/examAvailability.js'
 import { useAttempts, useExams, useStudentId } from '../hooks/useStudentWorkspace.js'
 import { PatternChips } from '../components/PatternChips.jsx'
 
@@ -51,7 +52,8 @@ export function ExamsPage() {
                 <PatternChips exam={selected} />
                 <p className="text-xs text-muted">Starts {selected.scheduledFor ? formatDateTime(selected.scheduledFor) : 'on release'}. Open exam detail for the full Phase 4 flow: instructions, system check, hall and submission.</p>
                 <ul className="list-disc space-y-1 pl-5 text-xs text-body">{selected.instructions.map((line) => <li key={line}>{line}</li>)}</ul>
-                <div className="flex flex-wrap gap-2"><Button variant="secondary" size="sm" onClick={() => navigate(`/student/exams/${selected.id}`)}>Open exam detail</Button>{selected.track === 'NEET' ? <Button variant="ghost" size="sm" icon={<BarChart3 strokeWidth={1.5} />} onClick={() => navigate(`/student/exams/${selected.id}/result`)}>Result sheet</Button> : null}</div>
+                {selected.playable === false ? <p className="rounded-sm border border-line bg-surface-sunken px-3 py-2 text-2xs leading-relaxed text-muted">{selected.unavailableReason ?? 'The exam hall is not published for this paper in the mock prototype.'}</p> : null}
+                <div className="flex flex-wrap gap-2"><Button variant="secondary" size="sm" onClick={() => navigate(`/student/exams/${selected.id}`)}>Open exam detail</Button>{canShowResultSheet(selected) ? <Button variant="ghost" size="sm" icon={<BarChart3 strokeWidth={1.5} />} onClick={() => navigate(`/student/exams/${selected.id}/result`)}>Result sheet</Button> : null}</div>
               </div>
             </Card>
           ) : null}
@@ -75,11 +77,12 @@ export function ExamsPage() {
                             <p className="flex flex-wrap items-center gap-2 text-xs font-[560] text-heading"><span className="truncate">{exam.title}</span><Badge tone={exam.status === 'live' ? 'info' : exam.status === 'closed' ? 'idle' : 'neutral'} variant="outline" shape="none">{exam.status}</Badge></p>
                             <p className="mt-1 font-mono text-2xs tabular-nums text-faint">{exam.scheduledFor ? formatDateTime(exam.scheduledFor) : 'Timed on release'}{attempt ? ` · ${formatMarks(attempt.score, attempt.maxMarks)} · ${attempt.percentile.toFixed(1)} pct` : ''}</p>
                             <div className="mt-2"><PatternChips exam={exam} /></div>
+                            {exam.playable === false ? <p className="mt-1.5 font-mono text-2xs text-faint">Exam hall not published in this prototype</p> : null}
                           </div>
                           <div className="flex flex-wrap gap-2">
                             <Button variant="ghost" size="sm" onClick={() => setParams((current) => { const next = new URLSearchParams(current); next.set('exam', exam.id); next.set('tab', TABS.includes(/** @type {ExamTab} */ (value)) ? value : 'upcoming'); return next }, { replace: true })}>View rules</Button>
                             <Button variant="secondary" size="sm" onClick={() => navigate(`/student/exams/${exam.id}`)}>Exam detail</Button>
-                            {exam.track === 'NEET' ? <Button variant="ghost" size="sm" icon={<BarChart3 strokeWidth={1.5} />} onClick={() => navigate(`/student/exams/${exam.id}/result`)}>Result sheet</Button> : null}
+                            {canShowResultSheet(exam) ? <Button variant="ghost" size="sm" icon={<BarChart3 strokeWidth={1.5} />} onClick={() => navigate(`/student/exams/${exam.id}/result`)}>Result sheet</Button> : null}
                           </div>
                         </li>
                       )

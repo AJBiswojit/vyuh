@@ -137,7 +137,7 @@ export function AdminBatchDetailPage() {
         {[
           { label: 'Roster', value: formatNumber(batch.studentCount), detail: `${batch.capacity - batch.studentCount} seats free of ${batch.capacity}` },
           { label: 'Sessions held', value: formatNumber(data.summary.sessionsHeld), detail: `Since ${formatDate(batch.startDate)}` },
-          { label: 'Average attendance', value: `${batch.attendancePercent.toFixed(1)}%`, detail: 'Weighted across the roster' },
+          { label: 'Average attendance', value: data.summary.averageAttendance === null ? 'No records' : `${batch.attendancePercent.toFixed(1)}%`, detail: data.summary.averageAttendance === null ? 'Attendance records are not available yet' : 'Weighted across the roster' },
           { label: 'Below the 75% line', value: formatNumber(data.summary.defaulters), detail: 'Uses the current policy threshold' },
         ].map((stat) => (
           <div key={stat.label} className="bg-surface-raised px-5 py-4">
@@ -305,8 +305,8 @@ export function AdminBatchDetailPage() {
                     <td className="py-2 pr-3 text-heading">{member.name}</td>
                     <td className="py-2 pr-3 font-mono text-2xs text-muted">{member.email}</td>
                     <td className="py-2 pr-3 text-right">
-                      <span className={member.attendancePercent < 75 ? 'font-mono tabular-nums text-danger-fg' : 'font-mono tabular-nums text-heading'}>
-                        {member.attendancePercent}%
+                      <span className={member.attendancePercent === null ? 'text-2xs text-muted' : member.attendancePercent < 75 ? 'font-mono tabular-nums text-danger-fg' : 'font-mono tabular-nums text-heading'}>
+                        {member.attendancePercent === null ? 'No records' : `${member.attendancePercent}%`}
                       </span>
                     </td>
                     <td className="py-2 pr-3">

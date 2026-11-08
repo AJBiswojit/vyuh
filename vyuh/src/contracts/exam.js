@@ -118,5 +118,29 @@
  * @property {string} attemptId
  * @property {number} revision
  * @property {string} syncedAt
+ *
+ * ── Exam registry (Batch 1) ────────────────────────────────────────────────
+ * One definition per seeded exam. `playable` is true only when a real authored
+ * question set exists; ledger-only papers keep `questionSetId: null`.
+ *
+ * @typedef {Object} ExamDefinition
+ * @property {string} id
+ * @property {string} title
+ * @property {import('./student.js').Exam['track']} track
+ * @property {import('./student.js').Exam['kind']} kind
+ * @property {import('./student.js').Exam['status']} status
+ * @property {number} durationMinutes
+ * @property {number} questionCount
+ * @property {number} maxMarks
+ * @property {number} negativeMarks
+ * @property {string[]} subjectIds
+ * @property {number} sectionCount
+ * @property {string | null} scheduledFor
+ * @property {string | null} endsAt
+ * @property {string[]} instructions
+ * @property {boolean} playable
+ * @property {string | null} questionSetId
+ * @property {'question_level'|'score_summary'|'unpublished'} resultMode
+ * @property {string | null} unavailableReason
  */
 export {}

@@ -26,13 +26,34 @@ export function RequireRole({ allow, children, redirectTo }) {
   return children ?? <Outlet />
 }
 
-/** Login/signup are guest-only; recovery and invitation pages remain reachable. */
+/**
+ * Batch 2: data-driven first-login gate. It is registered AFTER RequireAuth and
+ * RequireRole, and is deliberately role-agnostic, so any future account type
+ * carrying a temporary credential uses the same foundation. `/setup-account`
+ * itself sits OUTSIDE this guard (and outside GuestOnly), so there is no loop.
+ * The intended destination is preserved through router state.
+ * @param {{ children?: React.ReactNode }} props
+ */
+export function RequirePasswordChange({ children }) {
+  const mustChangePassword = useSessionStore((state) => state.mustChangePassword)
+  const location = useLocation()
+  if (mustChangePassword) {
+    return <Navigate to="/setup-account" replace state={{ from: location.pathname + location.search + location.hash }} />
+  }
+  return children ?? <Outlet />
+}
+
+/** Login is guest-only; a gated user is sent to setup, never bounced to a dashboard. */
 export function GuestOnly() {
   const status = useSessionStore((state) => state.status)
   const user = useSessionStore((state) => state.user)
+  const mustChangePassword = useSessionStore((state) => state.mustChangePassword)
   const location = useLocation()
   if (status === 'boot') return <BootScreen />
-  if (user) return <Navigate to={safeReturnPath(location.state?.from) ?? homeRouteFor(user.role)} replace />
+  if (user) {
+    if (mustChangePassword) return <Navigate to="/setup-account" replace />
+    return <Navigate to={safeReturnPath(location.state?.from) ?? homeRouteFor(user.role)} replace />
+  }
   return <Outlet />
 }
 

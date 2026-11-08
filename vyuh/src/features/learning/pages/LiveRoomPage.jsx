@@ -29,13 +29,18 @@ export function LiveRoomPage() {
   const upvote = useUpvoteQuestion(sessionId, studentId)
   const policy = room.data?.policy ?? attendancePolicyFallback
   const broadcast = session?.mode === 'broadcast'
+  // The service names the recording this class actually produced. A missing id
+  // means "not published yet", not "link to the default demo recording".
+  const replayHref = room.data?.recordingId
+    ? `/student/recordings/${room.data.recordingId}`
+    : /^\/student\/recordings\/[^/?#]+/.test(session?.joinUrl ?? '') ? session.joinUrl : null
 
   if (room.isPending) return <Skeleton.Region label="Loading live room"><div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]"><Skeleton.Block className="aspect-video" /><Skeleton.Block className="h-96" /></div></Skeleton.Region>
   if (room.isError || !session) return <ErrorState title="Room could not load" description={room.error?.message ?? 'This session is not available.'} action={<Link to="/student/live" className="text-xs font-[560] text-heading underline">Back to schedule</Link>} />
   if (!live) return (
     <div>
       <PageHeader eyebrow="Live room" title={session.title} />
-      <EmptyState size="panel" title={session.status === 'ended' ? 'This class has ended' : 'This room is not open yet'} description={session.status === 'ended' ? 'The recording is in your library with chapters, transcript and practice.' : `Scheduled for ${formatDateTime(session.startsAt)}. Come back when the Glacier LIVE label appears.`} action={session.status === 'ended' ? <Link to="/student/recordings/rec-rot-b" className="inline-flex min-h-11 items-center rounded-sm border border-heading bg-heading px-4 text-xs font-[560] text-on-inverse">Watch recording</Link> : <Link to="/student/live" className="inline-flex min-h-11 items-center rounded-sm border border-line-strong px-4 text-xs font-[560] text-heading">Back to schedule</Link>} />
+      <EmptyState size="panel" title={session.status === 'ended' ? 'This class has ended' : 'This room is not open yet'} description={session.status === 'ended' ? (replayHref ? 'The recording is in your library with chapters, transcript and practice.' : 'This class has ended. Its recording has not been published to the library yet.') : `Scheduled for ${formatDateTime(session.startsAt)}. Come back when the Glacier LIVE label appears.`} action={session.status === 'ended' ? (replayHref ? <Link to={replayHref} className="inline-flex min-h-11 items-center rounded-sm border border-heading bg-heading px-4 text-xs font-[560] text-on-inverse">Watch recording</Link> : <span className="inline-flex min-h-11 items-center rounded-sm border border-line px-4 font-mono text-2xs text-faint">Recording not published yet</span>) : <Link to="/student/live" className="inline-flex min-h-11 items-center rounded-sm border border-line-strong px-4 text-xs font-[560] text-heading">Back to schedule</Link>} />
     </div>
   )
   return (

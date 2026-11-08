@@ -8,6 +8,20 @@ import { formatDateTime, formatRelative } from '@/shared/lib/format.js'
 import { groupSessionsByDay } from '@/shared/lib/learningMath.js'
 import { useLearningStudentId, useLiveSchedule } from '../hooks/useLearning.js'
 
+/**
+ * An ended class links to the recording its own fixture names — never a
+ * hard-coded id. If no recording is published, say so instead of linking to
+ * somebody else's replay.
+ * @param {import('@/contracts/live.js').LiveSession} session
+ */
+function endedAction(session) {
+  const href = session.recordingId
+    ? `/student/recordings/${session.recordingId}`
+    : /^\/student\/recordings\/[^/?#]+/.test(session.joinUrl ?? '') ? session.joinUrl : null
+  if (!href) return <span className="inline-flex min-h-11 shrink-0 items-center rounded-sm border border-line px-4 font-mono text-2xs text-faint">Recording not published yet</span>
+  return <Link to={href} className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm border border-line-strong px-4 text-xs font-[560] text-heading hover:border-heading">Watch recording</Link>
+}
+
 /** Schedule grouped by day, with mode chips and batch names. */
 export function LiveSchedulePage() {
   useDocumentTitle('Live classes')
@@ -42,7 +56,7 @@ export function LiveSchedulePage() {
                         <h3 className="mt-2 text-sm font-[560] text-heading">{session.title}</h3>
                         <p className="mt-1 text-2xs text-muted">{session.facultyName} · {session.batchName}{session.status === 'live' ? ` · ${session.attendingCount} watching` : ''}</p>
                       </div>
-                      {session.status === 'live' ? <Link to={session.joinUrl} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-sm border border-heading bg-heading px-4 text-xs font-[560] text-on-inverse hover:opacity-90"><Radio className="size-4" strokeWidth={1.5} aria-hidden="true" />Join room</Link> : session.status === 'ended' ? <Link to="/student/recordings/rec-rot-b" className="inline-flex min-h-11 shrink-0 items-center justify-center rounded-sm border border-line-strong px-4 text-xs font-[560] text-heading hover:border-heading">Watch recording</Link> : <span className="inline-flex min-h-11 shrink-0 items-center rounded-sm border border-line px-4 font-mono text-2xs text-faint">Opens {formatRelative(session.startsAt)}</span>}
+                      {session.status === 'live' ? <Link to={session.joinUrl} className="inline-flex min-h-11 shrink-0 items-center justify-center gap-2 rounded-sm border border-heading bg-heading px-4 text-xs font-[560] text-on-inverse hover:opacity-90"><Radio className="size-4" strokeWidth={1.5} aria-hidden="true" />Join room</Link> : session.status === 'ended' ? endedAction(session) : <span className="inline-flex min-h-11 shrink-0 items-center rounded-sm border border-line px-4 font-mono text-2xs text-faint">Opens {formatRelative(session.startsAt)}</span>}
                     </div>
                   </li>
                 ))}

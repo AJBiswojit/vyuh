@@ -2,8 +2,22 @@
  * Shared auth validation. Forms use these schemas before submitting; services
  * use them again at the boundary. API response schemas re-export the session
  * schema so persistence and HTTP restore agree on the same contract.
+ *
+ * Batch 2: the login identifier is either a seeded demo email or an issued
+ * Institute ID. Both pass through one schema, so an unknown ID and a wrong
+ * password can share one generic error (no account enumeration).
  */
 import { z } from 'zod'
+
+/** Institute ID shapes. One institute-wide series per role; admin is 3 digits. */
+export const INSTITUTE_ID_PATTERNS = Object.freeze({
+  student: /^VYU-S-\d{2}-\d{4}$/,
+  faculty: /^VYU-F-\d{4}$/,
+  admin: /^VYU-A-\d{3}$/,
+})
+
+const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/
+const INSTITUTE_ID_RE = /^VYU-(?:S-\d{2}-\d{4}|F-\d{4}|A-\d{3})$/
 
 export const emailSchema = z.string().trim().toLowerCase().pipe(z.email('Enter a valid email address.').max(254))
 export const loginPasswordSchema = z.string().min(1, 'Enter your password.').max(128, 'Use at most 128 characters.')
@@ -13,8 +27,21 @@ export const newPasswordSchema = z.string()
   .regex(/[a-zA-Z]/, 'Include at least one letter.')
   .regex(/[0-9]/, 'Include at least one number.')
 
+export const instituteIdSchema = z.string().trim().toUpperCase().regex(INSTITUTE_ID_RE, 'Enter a valid Institute ID.')
+
+/**
+ * One identifier field. Emails are lowercased, Institute IDs uppercased. The
+ * empty-value message is preserved from the original email-only schema so the
+ * existing inline-validation regression keeps its exact copy.
+ */
+export const loginIdentifierSchema = z.string().trim()
+  .min(1, 'Enter a valid email address.')
+  .max(254, 'Use at most 254 characters.')
+  .refine((value) => EMAIL_RE.test(value) || INSTITUTE_ID_RE.test(value.toUpperCase()), 'Enter a valid email address or Institute ID.')
+  .transform((value) => EMAIL_RE.test(value) ? value.toLowerCase() : value.toUpperCase())
+
 export const loginSchema = z.object({
-  email: emailSchema,
+  email: loginIdentifierSchema,
   password: loginPasswordSchema,
 })
 
@@ -53,17 +80,52 @@ export const acceptInviteSchema = acceptInviteRequestSchema.extend({
   path: ['confirmPassword'], error: 'The passwords do not match.',
 })
 
+/**
+ * First-login password setup. The service compares the submitted value against
+ * the stored temporary digest and rejects an unchanged credential; no plaintext
+ * temporary password is ever passed to or stored by this schema.
+ */
+export const setupAccountSchema = z.object({
+  newPassword: newPasswordSchema,
+  confirmPassword: z.string().min(1, 'Enter your new password again.'),
+}).refine((value) => value.newPassword === value.confirmPassword, {
+  path: ['confirmPassword'], error: 'The passwords do not match.',
+})
+
+/**
+ * Boundary validation for the identity foundation. `admin` provisioning is
+ * rejected by the service (Admin-created Admin accounts are out of Batch 2).
+ */
+export const instituteAccountInputSchema = z.object({
+  role: z.enum(['student', 'faculty', 'admin']),
+  name: z.string().trim().min(2, 'Enter the account holder name.').max(80, 'Use at most 80 characters.'),
+  email: emailSchema,
+  phone: z.string().trim().max(32).optional(),
+  batchId: z.string().trim().min(1).optional(),
+  batchName: z.string().trim().min(1).optional(),
+})
+
+export const accountStatusSchema = z.enum(['active', 'invited', 'suspended', 'locked', 'archived'])
+
 export const roleSchema = z.enum(['student', 'faculty', 'admin'])
 export const userSchema = z.object({
   id: z.string().min(1), name: z.string().min(1), email: emailSchema,
   role: roleSchema, initials: z.string().length(2), phone: z.string().optional(),
   joinedAt: z.string().min(1), instituteCode: z.string().optional(),
   batchId: z.string().optional(), batchName: z.string().optional(), guardianEmail: emailSchema.optional(),
+  /* Optional Batch 2 identity metadata. Demo fixtures carry none of it. */
+  instituteId: z.string().optional(),
+  mustChangePassword: z.boolean().optional(),
+  acknowledgedPolicyVersion: z.string().nullable().optional(),
 })
 export const authSessionSchema = z.object({
   token: z.string().min(1), user: userSchema,
   expiresInSeconds: z.number().int().positive(),
   issuedAt: z.number().int().positive(), expiresAt: z.number().int().positive(),
+  /* Optional identity / first-login metadata. Never a password or a hash. */
+  instituteId: z.string().optional(),
+  mustChangePassword: z.boolean().optional(),
+  acknowledgedPolicyVersion: z.string().nullable().optional(),
 }).refine((value) => value.expiresAt > value.issuedAt, { error: 'Invalid session lifetime.' })
 export const authChallengeSchema = z.object({
   id: z.string().min(1), email: emailSchema, purpose: z.enum(['signup', 'reset']),

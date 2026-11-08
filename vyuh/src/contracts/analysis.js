@@ -139,6 +139,14 @@
  * @property {number} offsetMs
  * @property {string} rule
  *
+ * @typedef {Object} ExamScoreSummary
+ * @property {number} score
+ * @property {number} maxMarks
+ * @property {number} percentile
+ * @property {number} accuracy
+ * @property {string} submittedAt
+ * @property {{ subjectId: string, subjectName: string, scored: number, max: number, accuracy: number }[]} subjects
+ *
  * @typedef {Object} ExamAnalysis
  * @property {string} examId
  * @property {string} examTitle
@@ -147,9 +155,11 @@
  * @property {string} candidateName
  * @property {string} rollNumber
  * @property {string} submittedAt
- * @property {'fixture'|'submission'} source
+ * @property {'fixture'|'submission'|'unpublished'} source
  * @property {ReleasePolicy} release
  * @property {AnalysisDetails | null} details
+ * @property {string | null} notice                  Plain-words reason when no question-level sheet exists.
+ * @property {ExamScoreSummary | null} scoreSummary   Real seeded attempt summary; never invented here.
  *
  * @typedef {Object} TopicRevisionQuestion
  * @property {string} id

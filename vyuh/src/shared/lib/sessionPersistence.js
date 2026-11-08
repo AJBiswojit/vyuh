@@ -1,6 +1,7 @@
 /**
  * The only session storage key. Zustand owns writes; the mock AuthService reads
- * the same validated envelope. Passwords and pending credentials are excluded.
+ * the same validated envelope. Passwords, hashes and pending credentials are
+ * excluded: this envelope carries metadata only.
  * Storage failures degrade to an in-memory session rather than trapping a user.
  */
 import { authSessionSchema } from '../../services/authSchemas.js'
@@ -9,6 +10,20 @@ export const SESSION_STORAGE_KEY = 'vyuh.session'
 export const SESSION_LIFETIME_MS = 8 * 60 * 60 * 1000
 /** @type {Map<string, string>} */
 const memory = new Map()
+
+/**
+ * Batch 2: an optional account-eligibility check, registered by the mock auth
+ * service. It lives here (rather than importing fixtures) so `shared` keeps its
+ * boundary — no presentation or shared file may read `src/mock-data`. When no
+ * check is registered, restore behaves exactly as it did before Batch 2.
+ * @type {((session: import('../../contracts/user.js').AuthSession) => boolean) | null}
+ */
+let accountEligibilityCheck = null
+
+/** @param {((session: import('../../contracts/user.js').AuthSession) => boolean) | null} check */
+export function setAccountEligibilityCheck(check) {
+  accountEligibilityCheck = check
+}
 
 /** @type {{ getItem: (key: string) => string | null, setItem: (key: string, value: string) => void, removeItem: (key: string) => void }} */
 export const sessionStateStorage = {
@@ -36,6 +51,8 @@ export function readPersistedSession(now = Date.now()) {
     if (envelope?.version !== 1) return null
     const parsed = authSessionSchema.safeParse(envelope.state?.session)
     if (!parsed.success || parsed.data.expiresAt <= now) return null
+    /* Reject suspended, locked, archived and otherwise ineligible accounts on restore. */
+    if (accountEligibilityCheck && !accountEligibilityCheck(parsed.data)) return null
     return parsed.data
   } catch { return null }
 }
@@ -43,5 +60,11 @@ export function readPersistedSession(now = Date.now()) {
 /** @param {unknown} persisted @param {import('../store/sessionStore.js').SessionState} current */
 export function mergeSession(persisted, current) {
   const session = readPersistedSession()
-  return { ...current, session, user: session?.user ?? null, status: session ? 'authenticated' : 'anonymous' }
+  return {
+    ...current,
+    session,
+    user: session?.user ?? null,
+    status: session ? 'authenticated' : 'anonymous',
+    mustChangePassword: session?.mustChangePassword ?? session?.user?.mustChangePassword ?? false,
+  }
 }
