@@ -73,6 +73,8 @@ const DoubtThreadPage = lazy(() => import('@/features/learning/pages/DoubtThread
 const StudyRoomPage = lazy(() => import('@/features/learning/pages/StudyRoomPage.jsx').then((m) => ({ default: m.StudyRoomPage })))
 const AccountPage = lazy(() => import('@/features/account/pages/AccountPage.jsx').then((m) => ({ default: m.AccountPage })))
 const NotFoundPage = lazy(() => import('@/features/system/pages/NotFoundPage.jsx').then((m) => ({ default: m.NotFoundPage })))
+const AboutPage = lazy(() => import('@/features/system/pages/StaticProsePages.jsx').then((m) => ({ default: m.AboutPage })))
+const PrivacyPage = lazy(() => import('@/features/system/pages/StaticProsePages.jsx').then((m) => ({ default: m.PrivacyPage })))
 const AccessibilityPage = lazy(() => import('@/features/system/pages/AccessibilityPage.jsx').then((m) => ({ default: m.AccessibilityPage })))
 const DesignPreviewPage = lazy(() => import('@/features/design-preview/pages/DesignPreviewPage.jsx').then((m) => ({ default: m.DesignPreviewPage })))
 
@@ -265,6 +267,8 @@ export function AppRoutes() {
           <Route path="/accessibility" element={<AccessibilityPage />} />
         </Route>
         <Route path="/design-preview" element={<DesignPreviewPage />} />
+        <Route path="/about" element={<AboutPage />} />
+        <Route path="/privacy" element={<PrivacyPage />} />
         <Route element={<PublicLayout />}>
           <Route path="*" element={<NotFoundPage />} />
         </Route>

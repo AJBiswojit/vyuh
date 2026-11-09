@@ -1,0 +1,100 @@
+/*
+ * Landing concept styles. Colour lives in tokens.css — these classes compose
+ * token utilities and var(--vyuh-…-rgb) channels; no literals here.
+ */
+
+@layer components {
+  /* Film grain: SVG turbulence baked into a data URI, tiled, very faint. */
+  .landing-grain {
+    position: fixed;
+    inset: -50%;
+    z-index: 8;
+    pointer-events: none;
+    background-image: url("data:image/svg+xml,%3Csvg xmlns='http://www.w3.org/2000/svg' width='240' height='240'%3E%3Cfilter id='n'%3E%3CfeTurbulence type='fractalNoise' baseFrequency='0.9' numOctaves='2' stitchTiles='stitch'/%3E%3C/filter%3E%3Crect width='100%25' height='100%25' filter='url(%23n)' opacity='0.9'/%3E%3C/svg%3E");
+    background-size: 240px 240px;
+    opacity: 0.05;
+    mix-blend-mode: overlay;
+  }
+
+  /* Hero headline masks: the inner line slides up inside an overflow clip. */
+  .line-mask {
+    display: block;
+    overflow: hidden;
+    padding-block: 0.08em; /* descenders of the serif must not clip */
+    margin-block: -0.08em;
+  }
+  .line-inner {
+    display: block;
+    will-change: transform;
+  }
+
+  /* Section eyebrow row: mono index, hairline trailing rule. */
+  .section-eyebrow {
+    display: flex;
+    align-items: center;
+    gap: 0.9rem;
+    font-family: var(--font-mono);
+    font-size: 0.625rem;
+    letter-spacing: var(--tracking-widest);
+    text-transform: uppercase;
+  }
+  .section-eyebrow::after {
+    content: '';
+    flex: 1;
+    height: 1px;
+    background: currentColor;
+    opacity: 0.18;
+  }
+
+  /* Focus: ember ring, offset, visible on both papers. */
+  .vyuh-landing :focus-visible {
+    outline: 2px solid var(--color-ember);
+    outline-offset: 3px;
+    border-radius: 2px;
+  }
+
+  /* Vermilion selection, the page's second (and last) accent use. */
+  .vyuh-landing ::selection {
+    background: var(--color-ember);
+    color: var(--color-cinema-paper);
+  }
+
+  /* Statement words: GSAP scrubs colour via this registered class. */
+  .statement-word {
+    transition: none;
+    color: rgb(var(--vyuh-cinema-grey-rgb) / 0.55);
+  }
+
+  /* Horizontal pillar track (desktop) is translated by ScrollTrigger. */
+  .pillar-track {
+    will-change: transform;
+  }
+
+  /* Loop ring labels. */
+  .loop-label {
+    font-family: var(--font-mono);
+    font-size: 11px;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+  }
+
+  /* Scroll cue: hairline with a travelling dot. */
+  @keyframes scroll-cue {
+    0% { transform: translateY(-100%); }
+    55% { transform: translateY(0%); }
+    100% { transform: translateY(100%); }
+  }
+  .scroll-cue::after {
+    content: '';
+    position: absolute;
+    left: 50%;
+    top: 0;
+    width: 1px;
+    height: 34%;
+    background: rgb(var(--vyuh-cinema-paper-rgb) / 0.85);
+    animation: scroll-cue 2.1s cubic-bezier(0.45, 0, 0.15, 1) infinite;
+  }
+  @media (prefers-reduced-motion: reduce) {
+    .scroll-cue::after { animation: none; top: 33%; }
+  }
+}

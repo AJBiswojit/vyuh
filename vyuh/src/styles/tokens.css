@@ -56,6 +56,14 @@
   --color-glacier-soft: #a3d7e6;
   --color-dust-soft: #c2bcb1;
 
+  /* ── Landing concept ────────────────────────────────────────────────────
+   * One theme, two papers: ink sections and paper sections, alternating.
+   * The accent is vermilion, shared with Ember. Hairlines reuse
+   * --color-hairline-on-ink / --color-hairline-on-paper below.            */
+  --color-cinema-ink: #0d0d0f;
+  --color-cinema-paper: #f5f4f0;
+  --color-cinema-grey: #8b8b90;
+
   /* Ink-on-signal pairs, for filled status chips only. */
   --color-on-signal: #0b0d10;
   --color-on-signal-inverse: #fbf8f2;
@@ -81,6 +89,9 @@
   --vyuh-ink-rgb: 11 13 16;
   --vyuh-paper-rgb: 251 248 242;
   --vyuh-ember-rgb: 228 87 46;
+  --vyuh-cinema-ink-rgb: 13 13 15;
+  --vyuh-cinema-paper-rgb: 245 244 240;
+  --vyuh-cinema-grey-rgb: 139 139 144;
 
   /* ── Typography ────────────────────────────────────────────────────────── */
   /* Each stack leads with a measured fallback (@font-face in index.html) so the
