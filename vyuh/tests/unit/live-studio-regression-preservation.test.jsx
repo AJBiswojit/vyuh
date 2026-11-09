@@ -15,7 +15,13 @@ vi.mock('../../src/mock-data/latency.js', async (importOriginal) => {
 
 const ROOT = process.cwd()
 
-/** The 19 protected file hashes recorded at the start of this implementation. */
+/** The 19 protected file hashes recorded at the start of this implementation.
+ *
+ *  Four pins were deliberately re-recorded on 2026-11-09 with maintainer approval
+ *  for the Vyuh landing rebuild: package.json / package-lock.json (new runtime
+ *  deps gsap, three, lenis), src/app/routes/AppRoutes.jsx (chrome-free /about
+ *  and /privacy routes for the landing footer), src/styles/tokens.css (cinema
+ *  palette section for the same page). The remaining 15 pins are unchanged. */
 const PROTECTED = {
   'src/mock-data/accounts.js': 'd02465726586a2156d62f3da1a1c578aaa7ef7aa1e590a3050fa3850654fc30b',
   'src/mock-data/users.js': '57d4fe11d657af8782f3dec76f9984f4814bbbb6717ca65a2a9894fca4e58541',
@@ -24,7 +30,7 @@ const PROTECTED = {
   'src/mock-data/batchesAdmin.js': '5c0169e32fea83003d2fdcad445d34370f8f9c4fd50ea9981724a178c67c4ef5',
   'src/app/routes/v2RouteTable.js': '98e9fee47099c919b3f72c4414f657798e5e1565358fb713da3279832855e257',
   'src/app/routes/v2Aliases.jsx': '01a0067b801070c25484d0ed24b81dd9eb2ae0aba748667eea801502eca97200',
-  'src/app/routes/AppRoutes.jsx': '6d923c4c91d03a33c1777b42c0d671019a858b9e752d476d576deef29b7b11e2',
+  'src/app/routes/AppRoutes.jsx': '13e10ceff0d059188f483d35a41d30d1b5a82e9c1909780c571ba6341bfcaf94',
   'src/app/routes/guards.jsx': '4a25675f104e5dcf5d22e669c2a64989838566797085f4f86d9dbf63d4f1313a',
   'src/features/auth/pages/SetupAccountPage.jsx': 'b5ad26f7b1bcae14e61f623d43f3e56c197e61cab04c266efab79c81b5407a21',
   'src/app/layouts/AdminLayout.jsx': 'a826bbb23f2fe8d3f3f09a498d4e2f601f87582251912dc15652e97bd13c14dd',
@@ -32,10 +38,10 @@ const PROTECTED = {
   'src/shared/lib/roles.js': 'ebbb7f8410c4361dec68f5d3530ebb94f910740507a5e6402dfe18a17ea8a7ea',
   'src/shared/lib/sessionPersistence.js': 'ad12aee4f8abc61ac01ced6f08e11657228a8e4d837fa9f97d995c0bdfe66800',
   'src/shared/store/sessionStore.js': '255a88781f75443c62e594293d02f54479c0f07cadcef2979ba716151bc6d317',
-  'src/styles/tokens.css': '4bb2402587e147181709246dfacb87ffc94c7f1a8513719bd7d8e680c1875072',
+  'src/styles/tokens.css': 'ee5a66a1a7172e3e5475357b142085f008de4097331811735fc30c4dd516c974',
   'scripts/check-architecture.mjs': '8834bc9f89cc1a560db871d97134867188ec9f378374c9f5c500a2786e1eaca6',
-  'package.json': '286b2f0b98d3542813afe7b91ec280391f7d413e3d4492eda448d68f5fe8be69',
-  'package-lock.json': 'cb8531dbf6900041047fed16a54155aedea660f963f698babe21133ef854fc4e',
+  'package.json': '16b5805303160259670ee6488e300698244b935cc2a54485b8568eb46ee13adf',
+  'package-lock.json': '905b3949ad569b1ec1b1091b36628bc64785b031067f4b3e50091d30d99f03d8',
 }
 
 function sha(path) {
