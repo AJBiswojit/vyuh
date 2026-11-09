@@ -4,7 +4,8 @@ import { PageHeader } from '@/app/layouts/WorkspaceLayout.jsx'
 import { Badge, Button, Card, EmptyState, ErrorState, Skeleton } from '@/shared/ui'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle.js'
 import { formatDateTime } from '@/shared/lib/format.js'
-import { useStudentId } from '@/features/student/hooks/useStudentWorkspace.js'
+import { useStudentId, useExams } from '@/features/student/hooks/useStudentWorkspace.js'
+import { canShowResultSheet } from '@/shared/lib/examAvailability.js'
 import { useExamStore } from '../store/examStore.js'
 import { useExamSubmissionSync } from '../hooks/useExamFlow.js'
 
@@ -20,6 +21,9 @@ export function ExamConfirmationPage() {
   const navigate = useNavigate()
   const studentId = useStudentId()
   const attempt = useExamStore((state) => Object.values(state.attempts).find((item) => item.examId === examId && item.studentId === studentId && item.status === 'submitted'))
+  const exams = useExams(studentId)
+  const exam = exams.data?.find((item) => item.id === examId)
+  const resultAvailable = canShowResultSheet(exam)
   // Flushes an offline final receipt when the connection returns.
   useExamSubmissionSync(attempt)
   useDocumentTitle('Submission confirmed')
@@ -61,7 +65,7 @@ export function ExamConfirmationPage() {
     )
   } else {
     const receipt = attempt.receipt
-    const rows = [['Answered', receipt.counts.answered], ['Not answered', receipt.counts.notAnswered], ['Marked for review', receipt.counts.review], ['Not visited', receipt.counts.notVisited], ['Total', receipt.counts.total]]
+    const rows = [['Answered', receipt.counts.answered], ['Not answered', receipt.counts.notAnswered], ['Marked for review', receipt.counts.review], ['Not visited', receipt.counts.notVisited], ['Total', receipt.counts.total], ['Submitted at', formatDateTime(receipt.submittedAt)], ['Result', resultAvailable ? 'Available' : 'Not yet available']]
     body = (
       <div className="flex flex-col gap-5">
         <Card title={receipt.examTitle} wrapTitle action={<Badge tone={receipt.pendingSync ? 'review' : 'answer'} variant="outline" shape="none">{receipt.pendingSync ? 'Sync pending' : 'Submitted'}</Badge>}>
@@ -71,19 +75,20 @@ export function ExamConfirmationPage() {
             <ol className="divide-y divide-dashed divide-line border-y border-line font-mono text-sm tabular-nums" aria-label="Submission receipt">
               {rows.map(([label, value]) => <li key={label} className="flex justify-between py-3"><span className="text-body">{label}</span><span className="text-heading">{value}</span></li>)}
             </ol>
+            {!resultAvailable ? <p role="status" className="rounded-sm border border-line bg-surface-sunken px-3 py-2 text-xs leading-relaxed text-body">Your examination has been submitted. Results are not yet available.</p> : null}
             {receipt.pendingSync ? <p role="status" aria-live="polite" className="text-xs text-review-fg">Saved on this device. The final sheet and result analysis will sync when you are online.</p> : null}
           </div>
         </Card>
         <div className="flex flex-wrap gap-3">
           <Button variant="secondary" onClick={() => navigate('/student')}>Back to dashboard</Button>
           <Button variant="ghost" onClick={() => navigate('/student/exams')}>Back to exams</Button>
-          {receipt.pendingSync ? (
+          {resultAvailable ? (receipt.pendingSync ? (
             <span className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-line px-4 text-xs font-[560] text-faint" aria-disabled="true"><BarChart3 className="size-4" strokeWidth={1.5} aria-hidden="true" />View result sheet</span>
           ) : (
             <Link to={`/student/exams/${receipt.examId}/result?attempt=${encodeURIComponent(receipt.attemptId)}`} className="inline-flex min-h-11 items-center gap-2 rounded-sm border border-heading bg-heading px-4 text-xs font-[560] text-on-inverse hover:opacity-90">
               <BarChart3 className="size-4" strokeWidth={1.5} aria-hidden="true" />View result sheet
             </Link>
-          )}
+          )) : null}
         </div>
       </div>
     )

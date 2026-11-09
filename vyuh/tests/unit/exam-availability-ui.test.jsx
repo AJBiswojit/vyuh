@@ -47,13 +47,15 @@ describe('student exam pages use the registry, not track === NEET', () => {
     await renderRoute('/student/exams?exam=exam-mock-09', { session })
     expect(await screen.findByText(/no authored question set/i)).toBeTruthy()
     expect(screen.getAllByText('Exam hall not published in this prototype').length).toBeGreaterThan(0)
-    expect(screen.queryByRole('button', { name: 'Result sheet' })).toBeNull()
+    expect(screen.queryByRole('button', { name: 'View result' })).toBeNull()
   })
 
   it('/student/exams?exam=exam-neet-practice still offers the result sheet', async () => {
     await renderRoute('/student/exams?exam=exam-neet-practice', { session })
-    expect((await screen.findAllByRole('button', { name: 'Result sheet' })).length).toBeGreaterThan(0)
-    expect(screen.queryByText(/no authored question set/i)).toBeNull()
+    expect((await screen.findAllByRole('button', { name: 'View result' })).length).toBeGreaterThan(0)
+    // The published NEET paper carries no availability notice; the Rotational Motion live fixture does.
+    expect(screen.queryByTestId('exam-notice-exam-neet-practice')).toBeNull()
+    expect(screen.getByTestId('exam-notice-exam-rot-live')).toBeTruthy()
   })
 
   it('exam detail disables the hall for a ledger-only paper', async () => {

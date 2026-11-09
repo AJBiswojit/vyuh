@@ -40,8 +40,8 @@ async function enterHall(page, options = {}) {
   await page.getByRole('button', { name: 'Read instructions' }).click()
   await page.getByRole('button', { name: 'Run checks' }).click()
   await expect(page.getByTestId('system-checks')).toBeVisible()
-  await page.getByLabel('I accept the declaration').check()
-  await page.getByRole('button', { name: 'Enter exam hall' }).click()
+  await page.getByLabel('I have read and understood the instructions.').check()
+  await page.getByRole('button', { name: 'Start exam' }).click()
   await expect(page.getByTestId('exam-timer')).toBeVisible()
 }
 
@@ -115,7 +115,7 @@ test('a submitted attempt replaces the fixture and confirms the handoff', async 
   await page.keyboard.press('n')
   await expect(page.getByTestId('question-number')).toHaveText('Question 2')
   await page.getByRole('button', { name: 'Review and submit' }).click()
-  await page.getByRole('button', { name: 'Submit final answers' }).click()
+  await page.getByRole('button', { name: 'Confirm submission' }).click()
   await expect(page.getByRole('heading', { name: 'Submission confirmed' })).toBeVisible()
   await page.getByRole('button', { name: 'View result sheet' }).click()
   await expect(page).toHaveURL(new RegExp(`/student/exams/${EXAM}/result\\?attempt=`))

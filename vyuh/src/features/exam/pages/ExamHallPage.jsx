@@ -1,8 +1,8 @@
 import { useCallback, useEffect, useState } from 'react'
 import { useNavigate, useParams } from 'react-router-dom'
 import { AnimatePresence, motion } from 'framer-motion'
-import { Expand, WifiOff } from 'lucide-react'
-import { Button, ErrorState, Skeleton } from '@/shared/ui'
+import { Expand, LayoutGrid, WifiOff } from 'lucide-react'
+import { Button, ErrorState, Sheet, Skeleton } from '@/shared/ui'
 import { cn } from '@/shared/lib/cn.js'
 import { useDocumentTitle } from '@/shared/hooks/useDocumentTitle.js'
 import { useStudentId } from '@/features/student/hooks/useStudentWorkspace.js'
@@ -32,6 +32,7 @@ export function ExamHallPage() {
   const [submitOpen, setSubmitOpen] = useState(false)
   const [shortcutsOpen, setShortcutsOpen] = useState(false)
   const [openTool, setOpenTool] = useState(/** @type {'calculator'|'rough'|'font'|null} */ (null))
+  const [paletteOpen, setPaletteOpen] = useState(false)
   const { submit, isPending } = useSubmitExam(attempt?.attemptId)
   const { online } = useExamSync(attempt)
   const { fullscreen, enterFullscreen } = useExamIntegrity(attempt?.attemptId, attempt?.status === 'active')
@@ -132,11 +133,14 @@ export function ExamHallPage() {
             </AnimatePresence>
           </div>
         </section>
-        <QuestionPalette questionIds={attempt.questionIds} entries={attempt.entries} currentIndex={attempt.currentIndex} onJump={(index) => useExamStore.getState().visit(attempt.attemptId, index)} />
+        <div className="hidden lg:block">
+          <QuestionPalette questionIds={attempt.questionIds} entries={attempt.entries} currentIndex={attempt.currentIndex} onJump={(index) => useExamStore.getState().visit(attempt.attemptId, index)} />
+        </div>
       </main>
       <div className="sticky bottom-0 z-10 border-t border-line bg-surface-raised">
         <ToolsDock openTool={openTool} onToggleTool={(tool) => setOpenTool((current) => current === tool ? null : tool)} highContrast={attempt.highContrast} onContrast={() => useExamStore.getState().setHighContrast(attempt.attemptId, !attempt.highContrast)} onShortcuts={() => setShortcutsOpen(true)} />
         <footer className="flex flex-wrap items-center gap-2 border-t border-line px-4 py-3">
+        <Button variant="secondary" size="sm" className="lg:hidden" icon={<LayoutGrid strokeWidth={1.5} />} onClick={() => setPaletteOpen(true)}>Palette {counts.answered + counts.review_answered}/{counts.total}</Button>
         <Button variant="ghost" size="sm" onClick={clear} disabled={entry.selected.length === 0}>Clear response</Button>
         <Button variant="secondary" size="sm" onClick={reviewNext}>Mark for review and next</Button>
         <Button variant="ghost" size="sm" onClick={previous} disabled={attempt.currentIndex === 0}>Previous</Button>
@@ -146,7 +150,10 @@ export function ExamHallPage() {
       {openTool === 'calculator' ? <CalculatorPanel onClose={() => setOpenTool(null)} initial={toolInitial} /> : null}
       {openTool === 'rough' ? <RoughSheetPanel onClose={() => setOpenTool(null)} initial={{ x: 64, y: 150 }} /> : null}
       {openTool === 'font' ? <FontSizePanel fontSize={attempt.fontSize} onChange={(value) => useExamStore.getState().setFontSize(attempt.attemptId, value)} onClose={() => setOpenTool(null)} initial={{ x: 96, y: 170 }} /> : null}
-      <SubmitSheet open={submitOpen} onClose={() => setSubmitOpen(false)} counts={submitCounts} onSubmit={finalSubmit} isPending={isPending} online={online} />
+      <Sheet open={paletteOpen} onClose={() => setPaletteOpen(false)} title="Question palette" description="Jump to any question. Answers and review flags are kept." side="right" size="sm">
+        <QuestionPalette questionIds={attempt.questionIds} entries={attempt.entries} currentIndex={attempt.currentIndex} onJump={(index) => { useExamStore.getState().visit(attempt.attemptId, index); setPaletteOpen(false) }} />
+      </Sheet>
+      <SubmitSheet open={submitOpen} onClose={() => setSubmitOpen(false)} counts={submitCounts} onSubmit={finalSubmit} isPending={isPending} online={online} remainingSeconds={remaining} />
       <ShortcutSheet open={shortcutsOpen} onClose={() => setShortcutsOpen(false)} />
     </div>
   )

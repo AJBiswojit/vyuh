@@ -36,6 +36,11 @@ export function useActiveExamAttempt(examId, studentId) {
   return useExamStore((state) => Object.values(state.attempts).find((attempt) => attempt.examId === examId && attempt.studentId === studentId && attempt.status !== 'submitted'))
 }
 
+/** @param {string | undefined} examId @param {string | undefined} studentId */
+export function useSubmittedExamAttempt(examId, studentId) {
+  return useExamStore((state) => Object.values(state.attempts).find((attempt) => attempt.examId === examId && attempt.studentId === studentId && attempt.status === 'submitted'))
+}
+
 /** Server-corrected timer. The worker owns the interval; the component only
  * receives whole-second payloads. A non-worker fallback exists for jsdom.
  * @param {ExamAttemptState | undefined} attempt
