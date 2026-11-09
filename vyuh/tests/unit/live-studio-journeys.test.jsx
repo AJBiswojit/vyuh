@@ -80,18 +80,18 @@ describe('VYUH LIVE STUDIO — end-to-end prototype journeys (same browser conte
     expect(screen.queryByText(MIRROR_NOTICE)).toBeNull()
     expect(screen.getAllByText(PROTOTYPE_NOTICE).length).toBeGreaterThan(0)
 
-    /* R18: ONE participation-control group, in its own labelled region. */
-    const participation = screen.getByRole('region', { name: 'Shared classroom' })
-    expect(screen.getAllByRole('button', { name: 'Join shared classroom' })).toHaveLength(1)
-    await user.click(within(participation).getByRole('button', { name: 'Join shared classroom' }))
-    await waitFor(() => expect(screen.getByText(/Joined · hand lowered/)).toBeTruthy())
-    await user.click(within(participation).getByRole('button', { name: 'Raise hand' }))
-    await waitFor(() => expect(screen.getByText(/Joined · hand raised/)).toBeTruthy())
+    /* Participation is implicit — there is no join button in the way of the
+       first action. The hand toggle records one join, then raises. */
+    expect(screen.queryByRole('button', { name: 'Join shared classroom' })).toBeNull()
+    await user.click(screen.getByRole('button', { name: 'Raise hand' }))
+    await waitFor(() => expect(screen.getByRole('button', { name: 'Hand raised' })).toBeTruthy())
 
-    await user.click(screen.getByRole('tab', { name: /Polls/ }))
-    expect(screen.getByText('Ready to move on?')).toBeTruthy()
-    await user.click(screen.getByRole('button', { name: /Yes/ }))
-    await waitFor(() => expect(screen.getByText(/Your recorded response is saved/)).toBeTruthy())
+    /* Polls and resources live one tap away, out of the way of teaching. */
+    await user.click(screen.getByRole('button', { name: /Polls/ }))
+    const pollsSheet = await screen.findByRole('dialog', { name: 'Class polls' })
+    expect(within(pollsSheet).getByText('Ready to move on?')).toBeTruthy()
+    await user.click(within(pollsSheet).getByRole('button', { name: /^Yes/ }))
+    await waitFor(() => expect(within(pollsSheet).getByText(/Your recorded response is saved/)).toBeTruthy())
   })
 
   /* ── Acceptance remediation R12: approval makes a question visible ─────── */
@@ -107,7 +107,7 @@ describe('VYUH LIVE STUDIO — end-to-end prototype journeys (same browser conte
     const student = await signInDemoStudent()
     const { user } = await renderRoute('/student/live/ses-rot-b', { session: student })
     await waitFor(() => expect(screen.getByTestId('student-classroom')).toBeTruthy())
-    await user.click(screen.getByRole('tab', { name: /Q&A/ }))
+    await user.click(screen.getByRole('tab', { name: /Questions/ }))
     expect(screen.queryByText(body)).toBeNull()
     cleanup()
 
@@ -119,17 +119,21 @@ describe('VYUH LIVE STUDIO — end-to-end prototype journeys (same browser conte
     const studentAgain = await signInDemoStudent()
     const second = await renderRoute('/student/live/ses-rot-b', { session: studentAgain })
     await waitFor(() => expect(screen.getByTestId('student-classroom')).toBeTruthy())
-    await second.user.click(screen.getByRole('tab', { name: /Q&A/ }))
+    await second.user.click(screen.getByRole('tab', { name: /Questions/ }))
     expect(await screen.findByText(body)).toBeTruthy()
   })
 
-  it('Student Classroom: existing attendance strip, chat rail and replay links remain', async () => {
+  it('Student Classroom: attendance, chat and destinations remain reachable', async () => {
     const session = await signInDemoStudent()
     await renderRoute('/student/live/ses-rot-b', { session })
     await waitFor(() => expect(screen.getByTestId('student-classroom')).toBeTruthy())
     expect(screen.getByTestId('live-presence')).toBeTruthy()
     expect(screen.getByRole('log', { name: 'Class chat' })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: /Question queue/ })).toBeTruthy()
-    expect(screen.getByRole('link', { name: 'Open the recording library' })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: /Questions/ })).toBeTruthy()
+    expect(screen.getByRole('link', { name: 'Attendance details' })).toBeTruthy()
+    // One conversation — no duplicated chat surfaces.
+    expect(screen.getAllByPlaceholderText(/Message the class/)).toHaveLength(1)
+    // The recording library is not linked from the active class.
+    expect(screen.queryByRole('link', { name: 'Open the recording library' })).toBeNull()
   })
 })

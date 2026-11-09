@@ -99,8 +99,10 @@ function ParticipantStrip({ participants }) {
  * @param {any} props.metadata
  * @param {Array} props.participants
  * @param {React.ReactNode} [props.children]  Whiteboard slot.
+ * @param {'faculty'|'student'} [props.variant]  Faculty keeps the "What students see" chrome; students get a plain teaching stage.
+ * @param {boolean} [props.immersive]  Hide the header and footer entirely (fullscreen / focused view).
  */
-export function BroadcastPreview({ scene, sceneLabel, setup, slide, slideIndex, slideCount, media, metadata, participants, children }) {
+export function BroadcastPreview({ scene, sceneLabel, setup, slide, slideIndex, slideCount, media, metadata, participants, children, variant = 'faculty', immersive = false }) {
   const facultyName = metadata?.facultyName ?? 'Faculty'
   const status = media?.recording ? 'Recording indicator (simulated)' : 'Demo stage'
 
@@ -118,27 +120,40 @@ export function BroadcastPreview({ scene, sceneLabel, setup, slide, slideIndex, 
     <div className="grid h-full grid-cols-1 gap-2 p-3 md:grid-cols-2">
       <FacultyTile name={facultyName} compact />
       <SlidePane slide={slide} index={slideIndex} count={slideCount} compact />
-      <div className="md:col-span-2"><ParticipantStrip participants={participants} /></div>
+      {variant === 'faculty' ? <div className="md:col-span-2"><ParticipantStrip participants={participants} /></div> : null}
     </div>
   )
 
   return (
-    <section data-theme="dark" data-testid="broadcast-preview" className="overflow-hidden rounded-sm border border-hairline-on-ink bg-ink-sunken text-on-ink">
-      <header className="flex flex-wrap items-center gap-2 border-b border-hairline-on-ink px-3 py-2">
-        <span className="rule-label text-on-ink-label">What students see</span>
-        <span className="text-xs font-[560] tracking-tight text-on-ink">{sceneLabel}</span>
-        <Badge tone="review" variant="soft">Demo preview</Badge>
-        <span className="ml-auto flex items-center gap-1.5 text-2xs text-on-ink-muted"><Radio className="size-3.5" aria-hidden="true" />{status}</span>
-      </header>
-      <div className="min-h-[18rem] w-full sm:min-h-[22rem]">
+    <section data-theme="dark" data-testid="broadcast-preview" className={cn('overflow-hidden border-hairline-on-ink bg-ink-sunken text-on-ink', immersive ? 'flex h-full flex-col border-0' : 'rounded-sm border')}>
+      {!immersive ? (
+        <header className="flex flex-wrap items-center gap-2 border-b border-hairline-on-ink px-3 py-2">
+          {variant === 'faculty' ? (
+            <>
+              <span className="rule-label text-on-ink-label">What students see</span>
+              <span className="text-xs font-[560] tracking-tight text-on-ink">{sceneLabel}</span>
+              <Badge tone="review" variant="soft">Demo preview</Badge>
+            </>
+          ) : (
+            <>
+              <span className="rule-label text-on-ink-label">Teaching stage</span>
+              <span className="text-xs font-[560] tracking-tight text-on-ink">{sceneLabel}</span>
+            </>
+          )}
+          <span className="ml-auto flex items-center gap-1.5 text-2xs text-on-ink-muted"><Radio className="size-3.5" aria-hidden="true" />{status}</span>
+        </header>
+      ) : null}
+      <div className={cn('w-full', immersive ? 'min-h-0 flex-1' : 'min-h-[18rem] sm:min-h-[22rem]')}>
         <motion.div key={scene} initial={{ opacity: 0 }} animate={{ opacity: 1 }} transition={{ duration: 0.18 }} className="h-full">
           {stage}
         </motion.div>
       </div>
-      <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline-on-ink px-3 py-2">
-        <span className="text-2xs text-on-ink">{setup.title} · {setup.batchName}</span>
-        <span className="text-2xs leading-relaxed text-on-ink-muted">Demo stage — no real camera, microphone, screen or recording is used.</span>
-      </footer>
+      {!immersive ? (
+        <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline-on-ink px-3 py-2">
+          {variant === 'faculty' ? <span className="text-2xs text-on-ink">{setup.title} · {setup.batchName}</span> : null}
+          <span className="text-2xs leading-relaxed text-on-ink-muted">Demo stage — no real camera, microphone, screen or recording is used.</span>
+        </footer>
+      ) : null}
     </section>
   )
 }

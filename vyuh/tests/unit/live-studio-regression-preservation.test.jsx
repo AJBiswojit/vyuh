@@ -110,15 +110,16 @@ describe('VYUH LIVE STUDIO — preservation regression', () => {
     expect(screen.getByText('Waiting on you')).toBeTruthy()
   })
 
-  it('still renders every existing Student live-room capability', async () => {
+  it('still renders every existing Student live-class capability', async () => {
     const session = await signInDemoStudent()
     await renderRoute('/student/live/ses-rot-b', { session })
     await waitFor(() => expect(screen.getByTestId('live-presence')).toBeTruthy())
     expect(screen.getByRole('log', { name: 'Class chat' })).toBeTruthy()
-    expect(screen.getByRole('tab', { name: /Question queue/ })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Unmute microphone' })).toBeTruthy()
-    expect(screen.getByRole('button', { name: 'Leave', exact: true })).toBeTruthy()
+    expect(screen.getByRole('tab', { name: /Questions/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Mic off' })).toBeTruthy()
+    expect(screen.getAllByRole('button', { name: 'Leave class' }).length).toBeGreaterThan(0)
     await waitFor(() => expect(screen.getByTestId('student-classroom')).toBeTruthy())
+    expect(screen.getByTestId('teaching-stage')).toBeTruthy()
   })
 
   it('reports an honest unavailable Studio state for a non-canonical id', async () => {
