@@ -84,7 +84,7 @@ function ParticipantStrip({ participants }) {
 }
 
 /**
- * Program monitor. Every scene is DOM/SVG or a local silent sample clip; no
+ * Stage preview. Every scene is DOM/SVG or a local silent sample clip; no
  * camera, microphone, screen capture, WebRTC, WebSocket or streaming is used.
  * The dark theme is pinned here so the same broadcast stage reads consistently
  * inside the dark Faculty Studio, the light Mirror and the light Classroom.
@@ -102,7 +102,7 @@ function ParticipantStrip({ participants }) {
  */
 export function BroadcastPreview({ scene, sceneLabel, setup, slide, slideIndex, slideCount, media, metadata, participants, children }) {
   const facultyName = metadata?.facultyName ?? 'Faculty'
-  const status = media?.recording ? 'Recording indicator (simulated)' : 'Preview only'
+  const status = media?.recording ? 'Recording indicator (simulated)' : 'Demo stage'
 
   let stage = null
   if (scene === 'camera') stage = <div className="h-full p-3"><FacultyTile name={facultyName} /></div>
@@ -125,9 +125,9 @@ export function BroadcastPreview({ scene, sceneLabel, setup, slide, slideIndex, 
   return (
     <section data-theme="dark" data-testid="broadcast-preview" className="overflow-hidden rounded-sm border border-hairline-on-ink bg-ink-sunken text-on-ink">
       <header className="flex flex-wrap items-center gap-2 border-b border-hairline-on-ink px-3 py-2">
-        <span className="rule-label text-on-ink-label">Program monitor</span>
+        <span className="rule-label text-on-ink-label">What students see</span>
         <span className="text-xs font-[560] tracking-tight text-on-ink">{sceneLabel}</span>
-        <Badge tone="review" variant="soft">Simulated preview</Badge>
+        <Badge tone="review" variant="soft">Demo preview</Badge>
         <span className="ml-auto flex items-center gap-1.5 text-2xs text-on-ink-muted"><Radio className="size-3.5" aria-hidden="true" />{status}</span>
       </header>
       <div className="min-h-[18rem] w-full sm:min-h-[22rem]">
@@ -137,7 +137,7 @@ export function BroadcastPreview({ scene, sceneLabel, setup, slide, slideIndex, 
       </div>
       <footer className="flex flex-wrap items-center justify-between gap-2 border-t border-hairline-on-ink px-3 py-2">
         <span className="text-2xs text-on-ink">{setup.title} · {setup.batchName}</span>
-        <span className="text-2xs leading-relaxed text-on-ink-muted">DOM, SVG or a local silent sample clip. No live capture or transmission.</span>
+        <span className="text-2xs leading-relaxed text-on-ink-muted">Demo stage — no real camera, microphone, screen or recording is used.</span>
       </footer>
     </section>
   )

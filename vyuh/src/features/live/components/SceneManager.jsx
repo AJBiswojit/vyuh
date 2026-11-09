@@ -16,7 +16,7 @@ const ICONS = {
  */
 export function SceneManager({ scenes, activeScene, send }) {
   return (
-    <div role="group" aria-label="Broadcast scenes" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
+    <div role="group" aria-label="Choose what students see" className="grid gap-2 sm:grid-cols-2 xl:grid-cols-5">
       {scenes.map((scene) => {
         const Icon = ICONS[scene.id] ?? LayoutGrid
         const active = scene.id === activeScene

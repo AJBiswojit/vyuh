@@ -30,7 +30,7 @@ const CRUMB_RULES = [
   [/^\/faculty\/exams\/[^/]+$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Exams', to: '/faculty/exams' }, { label: 'Builder' }]],
   [/^\/faculty\/exams$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Exams' }]],
   [/^\/faculty\/analysis$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Item analysis' }]],
-  [/^\/faculty\/classes\/[^/]+\/host$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Classes', to: '/faculty/classes' }, { label: 'Host console' }]],
+  [/^\/faculty\/classes\/[^/]+\/host$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Classes', to: '/faculty/classes' }, { label: 'Live class' }]],
   [/^\/faculty\/classes$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Classes' }]],
   [/^\/faculty\/recordings\/[^/]+$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Recordings', to: '/faculty/recordings' }, { label: 'Editor' }]],
   [/^\/faculty\/recordings$/, [{ label: 'Faculty', to: '/faculty' }, { label: 'Recordings' }]],

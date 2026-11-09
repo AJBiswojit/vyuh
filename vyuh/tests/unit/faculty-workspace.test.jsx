@@ -120,28 +120,34 @@ describe('faculty workspace', () => {
     expect(await screen.findByTestId('monitor-feed')).toBeTruthy()
   })
 
-  it('starts a room, mutes a participant and puts a queued question on screen', async () => {
+  it('starts a class, mutes a participant and puts a queued question on screen', async () => {
     const target = facultyClasses.find((item) => item.id === 'ses-rot-b') ?? facultyClasses[0]
     const { user } = await renderRoute(`/faculty/classes/${target.id}/host`, { session })
-    await screen.findByTestId('host-participants')
 
-    await user.click(screen.getByRole('button', { name: 'Start session' }))
-    await waitFor(() => expect(screen.getByText('Session started')).toBeTruthy())
+    // One obvious button starts the class.
+    await user.click(await screen.findByRole('button', { name: 'Start class' }))
+    await waitFor(() => expect(screen.getByText('Class started')).toBeTruthy())
 
-    const participants = screen.getByTestId('host-participants')
+    // The roster lives under Teaching tools → Students.
+    await user.click(screen.getByRole('tab', { name: /Students/ }))
+    const participants = await screen.findByTestId('host-participants')
     await user.click(within(participants).getAllByRole('button', { name: 'Mute' })[0])
     const muteDialog = await screen.findByRole('dialog')
     await user.click(within(muteDialog).getByRole('button', { name: 'Mute participant' }))
     await waitFor(() => expect(within(participants).getAllByRole('button', { name: 'Unmute' }).length).toBeGreaterThan(0))
 
-    const queue = screen.getByTestId('host-queue')
+    // The report queue lives under More options → Moderation.
+    await user.click(screen.getByRole('button', { name: /More options/ }))
+    const moreOptions = await screen.findByRole('dialog', { name: 'More options' })
+    const queue = within(moreOptions).getByTestId('host-queue')
     await user.click(within(queue).getAllByRole('button', { name: 'Approve' })[0])
     await waitFor(() => expect(within(queue).getAllByText('On screen').length).toBeGreaterThan(0))
+    await user.click(within(moreOptions).getByRole('button', { name: 'Close dialog' }))
 
-    await user.click(screen.getByRole('button', { name: 'End' }))
-    const endDialog = await screen.findByRole('dialog', { name: 'End this session?' })
-    await user.click(within(endDialog).getByRole('button', { name: 'Keep it' }))
-    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'End this session?' })).toBeNull())
+    await user.click(screen.getByRole('button', { name: 'End class' }))
+    const endDialog = await screen.findByRole('dialog', { name: 'End this class?' })
+    await user.click(within(endDialog).getByRole('button', { name: 'Keep teaching' }))
+    await waitFor(() => expect(screen.queryByRole('dialog', { name: 'End this class?' })).toBeNull())
   })
 
   it('answers a doubt from a saved reply template', async () => {

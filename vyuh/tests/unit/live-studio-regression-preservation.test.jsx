@@ -88,15 +88,26 @@ describe('VYUH LIVE STUDIO — preservation regression', () => {
     }
   })
 
-  it('still renders every existing Faculty host-console capability', async () => {
+  it('still renders every existing Faculty live-class capability, with advanced tools behind More options', async () => {
     const session = await signInDemoFaculty()
-    await renderRoute('/faculty/classes/ses-rot-b/host', { session })
+    const { user } = await renderRoute('/faculty/classes/ses-rot-b/host', { session })
     await waitFor(() => expect(screen.getByTestId('faculty-live-studio')).toBeTruthy())
-    expect(screen.getByRole('button', { name: /Start session|Attention check/ })).toBeTruthy()
+    // One obvious action to begin teaching, in plain language.
+    expect(screen.getByRole('button', { name: 'Start class' })).toBeTruthy()
+    // Level 1 quick actions for presentation and the whiteboard.
+    expect(screen.getByRole('button', { name: /Share presentation/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: /Open whiteboard/ })).toBeTruthy()
+    expect(screen.getAllByText(/Live|Faculty Live Studio/).length).toBeGreaterThan(0)
+    // Level 2 — Teaching tools: the class roster is one click away.
+    await user.click(screen.getByRole('tab', { name: /Students/ }))
+    expect(screen.getByText('Presence')).toBeTruthy()
+    expect(screen.getByText('In the room')).toBeTruthy()
+    // Level 3 — More options: attendance, attention, moderation and records.
+    await user.click(screen.getByRole('button', { name: /More options/ }))
+    expect(await screen.findByRole('dialog', { name: 'More options' })).toBeTruthy()
+    expect(screen.getByRole('heading', { name: 'Attendance' })).toBeTruthy()
     expect(screen.getByText('Chat', { selector: 'h3' })).toBeTruthy()
     expect(screen.getByText('Waiting on you')).toBeTruthy()
-    expect(screen.getByText('Presence')).toBeTruthy()
-    expect(screen.getAllByText(/Live Studio|Faculty Live Studio/).length).toBeGreaterThan(0)
   })
 
   it('still renders every existing Student live-room capability', async () => {
@@ -107,13 +118,13 @@ describe('VYUH LIVE STUDIO — preservation regression', () => {
     expect(screen.getByRole('tab', { name: /Question queue/ })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Unmute microphone' })).toBeTruthy()
     expect(screen.getByRole('button', { name: 'Leave', exact: true })).toBeTruthy()
-    expect(screen.getByTestId('student-classroom')).toBeTruthy()
+    await waitFor(() => expect(screen.getByTestId('student-classroom')).toBeTruthy())
   })
 
   it('reports an honest unavailable Studio state for a non-canonical id', async () => {
     const session = await signInDemoFaculty()
     await renderRoute('/faculty/classes/cls-optics-2/host', { session })
     await waitFor(() => expect(screen.getByText('Live Studio is not available for this session')).toBeTruthy())
-    expect(screen.getByRole('button', { name: /Start session|Attention check/ })).toBeTruthy()
+    expect(screen.getByRole('button', { name: 'Start class' })).toBeTruthy()
   })
 })

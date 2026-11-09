@@ -34,7 +34,7 @@ describe('VYUH LIVE STUDIO — five scenes and simulated media controls', () => 
   it('renders five scene buttons and dispatches a scene change on click', () => {
     const send = vi.fn()
     render(createElement(SceneManager, { scenes: STUDIO_SCENES.map((scene) => ({ ...scene })), activeScene: 'camera', send }))
-    const group = screen.getByRole('group', { name: 'Broadcast scenes' })
+    const group = screen.getByRole('group', { name: 'Choose what students see' })
     expect(group.querySelectorAll('button')).toHaveLength(5)
     fireEvent.click(screen.getByRole('button', { name: /Split Classroom/ }))
     expect(send).toHaveBeenCalledWith('scene_changed', { scene: 'split' })
@@ -70,7 +70,7 @@ describe('VYUH LIVE STUDIO — five scenes and simulated media controls', () => 
 
   it('never uses a real media API', () => {
     const source = [
-      'src/features/live/components/BroadcastDock.jsx',
+      'src/features/live/components/DeviceBar.jsx',
       'src/features/live/components/BroadcastPreview.jsx',
       'src/features/live/components/Whiteboard.jsx',
     ].map((path) => readFileSync(path, 'utf8')).join('\n')

@@ -28,6 +28,14 @@ export function focusableWithin(container) {
 }
 
 /**
+ * When more than one modal is open, only the topmost may react to keys —
+ * otherwise Escape on a confirmation closes the dialog beneath it too, and Tab
+ * focus can leak into the background layer. The stack is module-scoped on
+ * purpose: every Dialog in the product registers here, most recent last.
+ */
+const modalStack = []
+
+/**
  * Wires a container as a modal: traps Tab, closes on Escape, restores focus.
  * Returns the cleanup function.
  *
@@ -37,12 +45,16 @@ export function focusableWithin(container) {
  */
 export function trapFocus(container, { onClose, initialFocusRef }) {
   const previouslyFocused = /** @type {HTMLElement | null} */ (document.activeElement)
+  const entry = { onClose }
+  modalStack.push(entry)
 
   const target = initialFocusRef?.current ?? focusableWithin(container)[0] ?? container
   target?.focus({ preventScroll: true })
 
   /** @param {KeyboardEvent} event */
   function onKeyDown(event) {
+    // A background modal never reacts while a dialog above it is open.
+    if (modalStack[modalStack.length - 1] !== entry) return
     if (event.key === 'Escape') {
       event.stopPropagation()
       onClose()
@@ -72,6 +84,8 @@ export function trapFocus(container, { onClose, initialFocusRef }) {
 
   return () => {
     document.removeEventListener('keydown', onKeyDown, true)
+    const index = modalStack.lastIndexOf(entry)
+    if (index !== -1) modalStack.splice(index, 1)
     previouslyFocused?.focus({ preventScroll: true })
   }
 }

@@ -136,7 +136,9 @@ the completed sitting behind **Item analysis**. Marking an item faulty asks once
 then recalculates the score register under the ledger — and the student's own
 result sheet (**Exams → Result sheet**) moves from 156 to 157 for the same
 voided item. **Classes** schedules a
-session and opens its **Host console**; **Recordings** uploads a mock file whose
+session and opens its **Live class** page — start teaching with **Start class**,
+present with the quick actions, and find attendance, moderation and records under
+**More options**; **Recordings** uploads a mock file whose
 transfer finishes in the editor; **Attendance** exports the visible rows as CSV.
 Browser demo flags: `vyuh.mock.monitorIntervalSeconds` (default 5) and
 `vyuh.mock.hostTickSeconds` (default 6) speed up the live feeds.

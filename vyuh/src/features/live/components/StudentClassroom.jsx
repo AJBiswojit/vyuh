@@ -125,7 +125,7 @@ export function StudentClassroom({ sessionId, session, attendanceState, replayHr
             <p className="rule-label">Session state</p>
             <dl className="mt-2 flex flex-col gap-2 text-2xs">
               <div className="flex items-center justify-between gap-2"><dt className="text-muted">Broadcast scene</dt><dd className="font-[560] text-heading">{view.activeSceneLabel}</dd></div>
-              <div className="flex items-center justify-between gap-2"><dt className="text-muted">Studio lifecycle</dt><dd className="font-[560] text-heading">{snapshot.status === 'live' ? 'Live (recorded)' : snapshot.status === 'ended' ? 'Ended (recorded)' : 'Scheduled (no Go Live)'}</dd></div>
+              <div className="flex items-center justify-between gap-2"><dt className="text-muted">Class status</dt><dd className="font-[560] text-heading">{snapshot.status === 'live' ? 'Live (demo)' : snapshot.status === 'ended' ? 'Ended (demo)' : 'Not started (demo)'}</dd></div>
               <div className="flex items-center justify-between gap-2"><dt className="text-muted">Catalogue state</dt><dd className="font-[560] text-heading">{snapshot.setup.catalogueStatus} (seeded)</dd></div>
               <div className="flex items-center justify-between gap-2"><dt className="text-muted">Whiteboard actions</dt><dd className="font-[560] text-heading">{snapshot.whiteboard.shapes.length} recorded</dd></div>
             </dl>

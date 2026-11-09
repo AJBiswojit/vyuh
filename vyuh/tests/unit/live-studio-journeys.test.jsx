@@ -26,20 +26,21 @@ describe('VYUH LIVE STUDIO — end-to-end prototype journeys (same browser conte
     resetSession(SESSION)
   })
 
-  it('Faculty Studio: Go Live, switch scene, toggle a simulated control, collapse Mirror', async () => {
+  it('Faculty Studio: Start class, switch the stage, toggle a simulated control, collapse Mirror', async () => {
     const session = await signInDemoFaculty()
     const { user } = await renderRoute('/faculty/classes/ses-rot-b/host', { session })
     await waitFor(() => expect(screen.getByTestId('faculty-live-studio')).toBeTruthy())
     expect(screen.getByTestId('broadcast-preview')).toBeTruthy()
 
-    await user.click(screen.getByRole('button', { name: 'Go Live' }))
-    await waitFor(() => expect(screen.getAllByText(/Live \(recorded Go Live\)/).length).toBeGreaterThan(0))
+    await user.click(screen.getByRole('button', { name: 'Start class' }))
+    await waitFor(() => expect(screen.getAllByText(/Live now/).length).toBeGreaterThan(0))
 
+    await user.click(screen.getByRole('tab', { name: 'Stage view' }))
     await user.click(screen.getByRole('button', { name: /Whiteboard Focus/ }))
     await waitFor(() => expect(screen.getByRole('button', { name: /Whiteboard Focus/ }).getAttribute('aria-pressed')).toBe('true'))
 
-    await user.click(screen.getByRole('button', { name: 'Microphone off. Turn on' }))
-    await waitFor(() => expect(screen.getByRole('button', { name: /Microphone on/ })).toBeTruthy())
+    await user.click(screen.getByRole('button', { name: /Microphone Off/ }))
+    await waitFor(() => expect(screen.getByRole('button', { name: /Microphone On/ })).toBeTruthy())
 
     expect(screen.getByText(MIRROR_NOTICE)).toBeTruthy()
     await user.click(screen.getByRole('button', { name: 'Collapse mirror' }))
