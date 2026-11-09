@@ -53,11 +53,11 @@ export function ClassroomMirror({ snapshot, view, metadata, send, open, onToggle
             <div className="rounded-sm border border-line bg-surface-raised p-2.5">
               <p className="rule-label">Scene</p>
               <p className="mt-1 text-xs font-[560] text-heading">{view.activeSceneLabel}</p>
-              <p className="mt-1 text-2xs text-muted">Synced from the shared classroom state.</p>
+              <p className="mt-1 text-2xs text-muted">The same stage students see.</p>
             </div>
             <div className="rounded-sm border border-line bg-surface-raised p-2.5">
               <p className="rule-label">Chat</p>
-              <p className="mt-1 font-mono text-xs tabular-nums text-heading">{view.visibleChat.length} visible lines</p>
+              <p className="mt-1 font-mono text-xs tabular-nums text-heading">{view.visibleChat.length} visible messages</p>
               <p className="mt-1 truncate text-2xs text-muted">{view.visibleChat.at(-1)?.body ?? 'No messages yet'}</p>
             </div>
             <div className="rounded-sm border border-line bg-surface-raised p-2.5">
@@ -66,7 +66,7 @@ export function ClassroomMirror({ snapshot, view, metadata, send, open, onToggle
               <p className="mt-1 text-2xs text-muted">{view.pendingQuestions?.length ?? 0} awaiting Faculty approval</p>
             </div>
             <div className="rounded-sm border border-line bg-surface-raised p-2.5">
-              <p className="rule-label">Polls · resources · roster</p>
+              <p className="rule-label">Polls, resources and roster</p>
               <p className="mt-1 truncate text-2xs text-heading">
                 {snapshot.polls.length} polls · {snapshot.resources.length} resources · {snapshot.participants.length} roster rows
               </p>
@@ -75,8 +75,8 @@ export function ClassroomMirror({ snapshot, view, metadata, send, open, onToggle
           </div>
 
           <div className="flex flex-col gap-2 rounded-sm border border-line-strong bg-surface-sunken p-3">
-            <p className="text-xs font-[560] text-heading">Seeded-participant simulation</p>
-            <p className="text-2xs leading-relaxed text-muted">Actions below are labelled simulations in the shared state — not a real Student login, not verified engagement.</p>
+            <p className="text-xs font-[560] text-heading">Simulate the class (demo)</p>
+            <p className="text-2xs leading-relaxed text-muted">Actions here are labelled demo simulations — not a real Student login, and not verified engagement.</p>
             <div className="grid gap-2 sm:grid-cols-2">
               <Select
                 label="Simulated seeded participant"

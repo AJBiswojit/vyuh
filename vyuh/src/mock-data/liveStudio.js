@@ -15,11 +15,11 @@ export const CANONICAL_STUDIO_SESSION_ID = 'ses-rot-b'
 
 /** @type {ReadonlyArray<{ id: import('../contracts/liveStudio.js').BroadcastScene, label: string, description: string }>} */
 export const STUDIO_SCENES = Object.freeze([
-  Object.freeze({ id: 'camera', label: 'Camera Focus', description: 'Faculty tile fills the program monitor.' }),
-  Object.freeze({ id: 'presentation', label: 'Presentation + Faculty', description: 'Slides beside a compact faculty tile.' }),
-  Object.freeze({ id: 'whiteboard', label: 'Whiteboard Focus', description: 'The shared drawing board fills the stage.' }),
-  Object.freeze({ id: 'content', label: 'Content Only', description: 'Slides and resources only, no faculty tile.' }),
-  Object.freeze({ id: 'split', label: 'Split Classroom', description: 'Faculty, content and a participant strip.' }),
+  Object.freeze({ id: 'camera', label: 'Camera Focus', description: 'Your camera fills the stage.' }),
+  Object.freeze({ id: 'presentation', label: 'Presentation + Faculty', description: 'Slides beside your camera.' }),
+  Object.freeze({ id: 'whiteboard', label: 'Whiteboard Focus', description: 'The shared whiteboard fills the stage.' }),
+  Object.freeze({ id: 'content', label: 'Content Only', description: 'Slides only — your camera is hidden.' }),
+  Object.freeze({ id: 'split', label: 'Split Classroom', description: 'You, the slides and the class on one stage.' }),
 ])
 
 /** Toolbox tools map to engagement tabs; selecting one is a real state change. */

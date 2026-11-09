@@ -73,15 +73,15 @@ export function buildSessionSummary(state, options = {}) {
   const metrics = []
 
   /* Duration — only from the lifecycle timestamps that the reducer wrote from
-     recorded Go Live / End Session events. */
+     recorded Start class / End class events. */
   if (started && state.startedAt) {
     const from = Date.parse(state.startedAt)
     const to = state.endedAt ? Date.parse(state.endedAt) : now
-    const label = ended ? 'Session duration' : 'Elapsed since Go Live'
+    const label = ended ? 'Class duration' : 'Time since class started'
     metrics.push(metric('duration', label, Number.isFinite(from) && Number.isFinite(to) ? elapsed(to - from) : UNAVAILABLE_LABEL,
-      'recorded_event', 'Calculated from the recorded Go Live and End Session mock events.'))
+      'recorded_event', 'Calculated from the recorded Start class and End class demo events.'))
   } else {
-    metrics.push(unavailable('duration', 'Session duration', 'Go Live has not been recorded in this prototype session.'))
+    metrics.push(unavailable('duration', 'Class duration', 'The class has not been started in this demo session.'))
   }
 
   /* Participant information — three separate, honestly labelled sources. */
@@ -149,7 +149,7 @@ export function buildSessionSummary(state, options = {}) {
     'Recorded mock opens of seeded and added resources.'))
 
   const completion = ended ? 'ended' : started ? 'live' : 'not_started'
-  const completionLabel = ended ? 'Ended (recorded)' : started ? 'Live (recorded Go Live)' : 'Not started (no Go Live recorded)'
+  const completionLabel = ended ? 'Class ended' : started ? 'Live (recorded)' : 'Not started (no Start class recorded)'
 
   return { notice: PROTOTYPE_NOTICE, metrics, completion, completionLabel }
 }

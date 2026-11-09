@@ -46,7 +46,7 @@ export function createInitialState({ sessionId, at }) {
       recordingPreference: false,
     },
     /* Recorded studio lifecycle starts at scheduled even when the seeded
-       catalogue says live. Go Live and End Session are the only sources of the
+       catalogue says live. Start class and End class are the only sources of the
        completion state; nothing is inferred from the fixture. */
     status: /** @type {const} */ ('scheduled'),
     activeScene: /** @type {const} */ ('camera'),

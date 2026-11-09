@@ -16,10 +16,10 @@ export function SessionSummary({ summary, snapshot, metadata }) {
     <section aria-labelledby="studio-summary-title" className="flex flex-col gap-3 rounded-sm border border-line bg-surface-raised p-4">
       <header className="flex flex-wrap items-start justify-between gap-2">
         <div>
-          <p className="rule-label">Session summary</p>
+          <p className="rule-label">After class</p>
           <h3 id="studio-summary-title" className="mt-1 flex items-center gap-2 text-sm font-[560] tracking-tight text-heading">
             <Clock className="size-4" strokeWidth={1.5} aria-hidden="true" />
-            Prototype session results
+            What happened in this class
           </h3>
         </div>
         {summary ? <Badge tone={summary.completion === 'ended' ? 'neutral' : summary.completion === 'live' ? 'answer' : 'review'} variant="soft">{summary.completionLabel}</Badge> : null}
