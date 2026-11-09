@@ -1,11 +1,11 @@
 import { useEffect, useRef } from 'react'
 import { usePrefersReducedMotion } from '@/shared/hooks/usePrefersReducedMotion.js'
 import { useMediaQuery } from '@/shared/hooks/useMediaQuery.js'
+import { useTheme } from '@/shared/hooks/useTheme.js'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 import Lenis from 'lenis'
 
-import { LatticeScene } from '../components/LatticeScene.jsx'
 import { Nav } from '../components/Nav.jsx'
 import { Loader } from '../components/Loader.jsx'
 import { Hero } from '../components/Hero.jsx'
@@ -21,21 +21,21 @@ import '../landing.css'
 /**
  * Vyuh by MediXO — the arrangement of practice.
  *
- * A single fixed canvas (LatticeScene) carries the whole 3D story behind the
- * document: an assembly of ~2,000 instanced nodes that snaps into a triple
- * chevron on load, rotates and dollies through the pinned hero, folds away as
- * the statement washes in, spins four pillar objects in place, and finally
- * dissolves into particles on the closing paper panel.
- *
- * Scroll position never mounts or unmounts scenes — ScrollTrigger writes plain
- * numbers into one shared mutable `motion` object and the canvas imperative
- * loop reads them. One GSAP ticker, one reduced-motion switch, zero CTAs.
+ * Two canvases carry the 3D story, each absolute inside its own section and
+ * paused off-screen: the hero's lattice (LatticeScene — assembly, implosion,
+ * chakravyuh, ripple) and the coda's (ClosingLattice — the wheel scattering
+ * over the closing panel). The method panels are a CSS3D scene of live paper
+ * documents. ScrollTrigger writes plain numbers into one shared mutable
+ * `motion` object; every imperative loop reads it. One GSAP ticker, one
+ * reduced-motion switch, zero CTAs in the body — the navbar and footer hold
+ * the only links.
  */
 export function LandingPage() {
   // The hook appends the institute name; the spec fixes the exact title.
   useEffect(() => { document.title = 'Vyuh by MediXO' }, [])
   const reduced = usePrefersReducedMotion()
   const isMobile = useMediaQuery('(max-width: 767px)')
+  const { resolved: resolvedTheme } = useTheme()
   const scopeRef = useRef(null)
   const lenisRef = useRef(null)
   const motion = useRef({
@@ -65,6 +65,21 @@ export function LandingPage() {
     }
   }, [reduced])
 
+  // Late layout shifts (fonts, the logo SVG) invalidate every trigger below —
+  // refresh once both have settled so pins land where content actually is.
+  useEffect(() => {
+    gsap.registerPlugin(ScrollTrigger)
+    const refresh = () => ScrollTrigger.refresh()
+    let cancelled = false
+    if (document.fonts?.ready) document.fonts.ready.then(() => { if (!cancelled) refresh() })
+    const logo = new Image()
+    logo.src = '/logo/Vyuh_medixo.svg'
+    if (logo.complete) refresh()
+    else logo.addEventListener('load', refresh, { once: true })
+    window.addEventListener('load', refresh)
+    return () => { cancelled = true; window.removeEventListener('load', refresh) }
+  }, [])
+
   const scrollTo = (target) => {
     const el = document.querySelector(target)
     if (!el) return
@@ -73,18 +88,17 @@ export function LandingPage() {
   }
 
   return (
-    <div ref={scopeRef} className="vyuh-landing relative bg-cinema-paper text-cinema-ink antialiased">
-      <LatticeScene motion={motion} reduced={reduced} isMobile={isMobile} />
+    <div ref={scopeRef} className="vyuh-landing relative bg-[var(--lg-surface)] text-[var(--lg-text)] antialiased">
       <Nav onJump={scrollTo} />
       {!reduced ? <Loader motion={motion} /> : null}
       <main id="main">
-        <Hero motion={motion} reduced={reduced} />
+        <Hero motion={motion} reduced={reduced} isMobile={isMobile} resolvedTheme={resolvedTheme} />
         <Statement reduced={reduced} />
         <Pillars motion={motion} reduced={reduced} isMobile={isMobile} />
         <Principles reduced={reduced} />
         <Loop reduced={reduced} />
         <Stats reduced={reduced} />
-        <Closing motion={motion} reduced={reduced} />
+        <Closing motion={motion} reduced={reduced} isMobile={isMobile} resolvedTheme={resolvedTheme} />
       </main>
       <Footer />
       <div aria-hidden="true" className="landing-grain" />

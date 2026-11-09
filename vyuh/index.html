@@ -2,13 +2,34 @@
 <html lang="en" class="h-full">
   <head>
     <meta charset="UTF-8" />
-    <link rel="icon" type="image/svg+xml" href="/favicon.svg" />
+    <link rel="icon" type="image/svg+xml" href="/logo/Vyuh_medixo.svg" />
     <meta name="viewport" content="width=device-width, initial-scale=1.0" />
     <meta
       name="description"
       content="Vyuh — the arrangement of practice. A scroll-driven look at how deliberate sequencing turns effort into mastery."
     />
-    <meta name="theme-color" content="#0d0d0f" />
+    <script>
+      /* Apply the stored theme before first paint — ThemeProvider re-affirms it
+         on mount. No reload, no flash; storage key must match ThemeProvider. */
+      (function () {
+        try {
+          var stored = localStorage.getItem('vyuh.theme')
+          var theme = stored === 'light' || stored === 'dark'
+            ? stored
+            : (window.matchMedia('(prefers-color-scheme: dark)').matches ? 'dark' : 'light')
+          document.documentElement.dataset.theme = theme
+          var meta = document.querySelector('meta[name="theme-color"]')
+          if (meta) {
+            var token = theme === 'dark' ? '--color-cinema-ink' : '--color-cinema-paper'
+            var value = getComputedStyle(document.documentElement).getPropertyValue(token).trim()
+            if (value) meta.setAttribute('content', value)
+          }
+        } catch (error) {
+          document.documentElement.dataset.theme = 'light'
+        }
+      })()
+    </script>
+    <meta name="theme-color" content="#f5f4f0" />
 
     <!--
       Typefaces are declared here, not imported from a package, so the stack the

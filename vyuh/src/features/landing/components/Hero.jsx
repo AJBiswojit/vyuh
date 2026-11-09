@@ -1,13 +1,17 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { LatticeScene } from './LatticeScene.jsx'
 
 /**
- * The pinned overture — about 200vh of scroll, ink throughout. The canvas does
- * the moving; this layer holds the type. Headline lines rise out of masks once
- * the loader hands off (~1.3s), while scroll scrubs rotation, tilt and dolly.
+ * The pinned overture — about 200vh of scroll. The formation does the moving;
+ * this layer holds the type, and the lattice canvas lives INSIDE this section
+ * (absolute, overflow hidden) so it can never drift over the rest of the
+ * page. ScrollTrigger's onLeave / onEnterBack (inside LatticeScene) hides the
+ * canvas after the pin releases; an IntersectionObserver pauses its render loop
+ * while the hero is off-screen.
  */
-export function Hero({ motion, reduced }) {
+export function Hero({ motion, reduced, isMobile, resolvedTheme }) {
   const sectionRef = useRef(null)
   const noteRef = useRef(null)
 
@@ -61,27 +65,27 @@ export function Hero({ motion, reduced }) {
       id="top"
       data-lattice-gate="hero"
       aria-label="Vyuh — the arrangement of practice"
-      className="relative flex h-[100svh] flex-col justify-end overflow-hidden bg-cinema-ink pb-14 text-cinema-paper sm:pb-16"
+      className="relative flex h-[100svh] flex-col justify-end overflow-hidden bg-[var(--lg-surface)] pb-14 text-[var(--lg-text)] sm:pb-16"
     >
-      {/* Ink wash so the type holds contrast against the lattice dust. */}
-      {/* Desktop: left-to-right wash, lattice sits right of the type. */}
+      {/* The lattice — absolute inside the pinned, clipped hero. */}
+      <LatticeScene motion={motion} reduced={reduced} isMobile={isMobile} resolvedTheme={resolvedTheme} />
+      {/* Theme-wash so the type holds contrast against the lattice dust. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 z-[6] hidden sm:block"
-        style={{ background: 'linear-gradient(100deg, rgb(var(--vyuh-cinema-ink-rgb) / 0.94) 0%, rgb(var(--vyuh-cinema-ink-rgb) / 0.72) 34%, rgb(var(--vyuh-cinema-ink-rgb) / 0.08) 62%, rgb(var(--vyuh-cinema-ink-rgb) / 0) 78%)' }}
+        className="absolute inset-0 z-[2] hidden sm:block"
+        style={{ background: 'var(--lg-wash-hero-desktop)' }}
       />
-      {/* Mobile: vertical wash, heaviest under the type block. */}
       <div
         aria-hidden="true"
-        className="absolute inset-0 z-[6] sm:hidden"
-        style={{ background: 'linear-gradient(180deg, rgb(var(--vyuh-cinema-ink-rgb) / 0.3) 0%, rgb(var(--vyuh-cinema-ink-rgb) / 0.12) 26%, rgb(var(--vyuh-cinema-ink-rgb) / 0.42) 48%, rgb(var(--vyuh-cinema-ink-rgb) / 0.9) 66%, rgb(var(--vyuh-cinema-ink-rgb) / 0.97) 100%)' }}
+        className="absolute inset-0 z-[2] sm:hidden"
+        style={{ background: 'var(--lg-wash-hero-mobile)' }}
       />
       <div className="relative z-[6] px-5 sm:px-8">
-        <p className="hero-eyebrow font-mono text-[0.625rem] uppercase tracking-widest text-cinema-paper/70" style={reduced ? undefined : { opacity: 0, visibility: 'hidden' }}>
+        <p className="hero-eyebrow font-mono text-[0.625rem] uppercase tracking-widest text-[var(--lg-text-70)]" style={reduced ? undefined : { opacity: 0, visibility: 'hidden' }}>
           The arrangement of practice
         </p>
         <h1
-          className="mt-5 font-display font-[520] text-cinema-paper"
+          className="mt-5 font-display font-[520] text-[var(--lg-text)]"
           style={{
             fontSize: 'clamp(3.4rem, 9.6vw, 8.25rem)',
             lineHeight: 0.94,
@@ -96,12 +100,12 @@ export function Hero({ motion, reduced }) {
           </span>
           <span className="line-mask">
             <span className="hero-line-inner line-inner" style={reduced ? undefined : { transform: 'translateY(112%)' }}>
-              an <em className="font-[430] italic">arrangement.</em>
+              an <em className="font-[430] italic text-[var(--color-ember)]">arrangement.</em>
             </span>
           </span>
         </h1>
         <p
-          className="hero-support mt-7 max-w-[34ch] text-base leading-relaxed text-cinema-paper/80"
+          className="hero-support mt-7 max-w-[34ch] text-base leading-relaxed text-[var(--lg-text-80)]"
           style={reduced ? undefined : { opacity: 0, transform: 'translateY(14px)', visibility: 'hidden' }}
         >
           Practice arranged with intent — every answer explained, every mistake
@@ -115,11 +119,11 @@ export function Hero({ motion, reduced }) {
         className="pointer-events-none absolute bottom-24 left-0 right-0 z-[6] mx-auto hidden w-max items-center gap-4 sm:flex"
         style={{ opacity: 0, visibility: 'hidden' }}
       >
-        <span className="h-px w-10 bg-cinema-paper/25" />
-        <span className="font-mono text-[0.5625rem] uppercase tracking-widest text-cinema-paper/55">
+        <span className="h-px w-10 bg-[var(--lg-text-25)]" />
+        <span className="font-mono text-[0.5625rem] uppercase tracking-widest text-[var(--lg-text-55)]">
           Every ring answered — the arrangement holds
         </span>
-        <span className="h-px w-10 bg-cinema-paper/25" />
+        <span className="h-px w-10 bg-[var(--lg-text-25)]" />
       </div>
 
       <div
@@ -127,8 +131,8 @@ export function Hero({ motion, reduced }) {
         className="hero-cue pointer-events-none absolute bottom-6 right-5 z-[6] flex items-center gap-3 sm:right-8"
         style={reduced ? undefined : { opacity: 0, visibility: 'hidden' }}
       >
-        <span className="font-mono text-[0.625rem] uppercase tracking-widest text-cinema-paper/55">Scroll</span>
-        <span className="scroll-cue relative h-14 w-px overflow-hidden bg-cinema-paper/15" />
+        <span className="font-mono text-[0.625rem] uppercase tracking-widest text-[var(--lg-text-55)]">Scroll</span>
+        <span className="scroll-cue relative h-14 w-px overflow-hidden bg-[var(--lg-text-15)]" />
       </div>
     </section>
   )

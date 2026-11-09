@@ -4,7 +4,7 @@ import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 const STATS = [
   { value: 84000, decimals: 0, suffix: '', label: 'Practice responses arranged over the last twelve months' },
-  { value: 92, decimals: 0, suffix: '%', label: 'Median accuracy lift across full-length sittings by week six' },
+  { value: 92, decimals: 0, suffix: '%', label: 'Median accuracy lift across full-length sittings by week six', accent: true },
   { value: 3.1, decimals: 1, suffix: ' days', label: 'Median time from a mapped mistake pattern to a patched one' },
 ]
 
@@ -47,34 +47,34 @@ export function Stats({ reduced }) {
     <section
       ref={rootRef}
       aria-label="Numbers — placeholders until audited"
-      className="border-t border-hairline-on-ink bg-cinema-ink px-5 py-20 text-cinema-paper sm:px-8 sm:py-24"
+      className="border-t border-[var(--lg-hairline)] bg-[var(--lg-surface)] px-5 py-20 text-[var(--lg-text)] sm:px-8 sm:py-24"
     >
       <div className="mx-auto max-w-6xl">
         <div className="flex flex-wrap items-end justify-between gap-4">
-          <p className="section-eyebrow text-cinema-paper/50">Numbers</p>
-          <p className="font-mono text-[0.625rem] uppercase tracking-widest text-cinema-paper/40">
-            All figures are placeholders<span className="text-ember">*</span>
+          <p className="section-eyebrow text-[var(--lg-text-50)]">Numbers</p>
+          <p className="font-mono text-[0.625rem] uppercase tracking-widest text-[var(--lg-text-55)]">
+            All figures are placeholders<span className="text-[var(--lg-text-55)]">*</span>
           </p>
         </div>
         <dl className="mt-12 grid gap-12 sm:grid-cols-3 sm:gap-10">
           {STATS.map((stat) => (
-            <div key={stat.label} className="flex flex-col border-t border-hairline-on-ink pt-6">
+            <div key={stat.label} className="flex flex-col border-t border-[var(--lg-hairline)] pt-6">
               <dd
-                className="stat-figure order-1 font-mono text-5xl font-[560] tabular-nums leading-none tracking-tight text-cinema-paper sm:text-6xl"
+                className={`stat-figure order-1 font-mono text-5xl font-[560] tabular-nums leading-none tracking-tight sm:text-6xl ${stat.accent ? 'text-[var(--color-ember)]' : 'text-[var(--lg-text)]'}`}
                 data-value={stat.value}
                 data-decimals={stat.decimals}
               >
                 <span>{reduced ? staticFigure(stat) : '0'}</span>
-                {stat.suffix ? <span className="text-[0.55em] text-cinema-paper/55">{stat.suffix}</span> : null}
+                {stat.suffix ? <span className="text-[0.55em] text-[var(--lg-text-55)]">{stat.suffix}</span> : null}
               </dd>
-              <dt className="order-2 mt-4 max-w-[36ch] text-sm leading-snug text-cinema-paper/62">
+              <dt className="order-2 mt-4 max-w-[36ch] text-sm leading-snug text-[var(--lg-text-62)]">
                 {stat.label}
-                <span className="text-ember">*</span>
+                <span className="text-[var(--lg-text-55)]">*</span>
               </dt>
             </div>
           ))}
         </dl>
-        <p className="mt-12 font-mono text-[0.5625rem] uppercase leading-relaxed tracking-widest text-cinema-paper/38">
+        <p className="mt-12 font-mono text-[0.5625rem] uppercase leading-relaxed tracking-widest text-[var(--lg-text-55)]">
           * Placeholder values for layout evaluation — not measured, not audited; replace before public launch.
         </p>
       </div>
