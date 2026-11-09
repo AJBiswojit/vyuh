@@ -314,7 +314,7 @@ export function DesignPreviewPage() {
 
         <DualSpecimen
           title="Logo"
-          note="3×3 grid, one ember cell. Loading walks the lit cell in reading order."
+          note="Official Vyuh × MediXO mark, inline. Gradient follows the theme; tone pins it to a surface."
           render={(theme) => (
             <div className="flex flex-wrap items-center gap-6">
               <Logo tone={theme === 'dark' ? 'paper' : 'ink'} size="lg" />
