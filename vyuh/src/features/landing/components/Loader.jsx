@@ -24,20 +24,14 @@ export function Loader({ motion }) {
     <div
       ref={overlayRef}
       aria-hidden="true"
-      className="fixed inset-0 z-[7] flex flex-col items-center justify-center bg-cinema-ink"
+      className="fixed inset-0 z-[20] flex flex-col items-center justify-center bg-[var(--lg-surface)]"
     >
-      <p
-        className="loader-word font-display text-cinema-paper"
-        style={{
-          fontSize: 'clamp(4rem, 14vw, 8.5rem)',
-          lineHeight: 0.92,
-          letterSpacing: '-0.045em',
-          fontVariationSettings: "'SOFT' 0, 'WONK' 1, 'wght' 520",
-        }}
-      >
-        Vyuh
-      </p>
-      <p className="loader-sub mt-5 font-mono text-[0.6875rem] uppercase tracking-widest text-cinema-paper opacity-60">
+      <img
+        src="/logo/Vyuh_medixo.svg"
+        alt="Vyuh by MediXO"
+        className="loader-word logo-img h-28 w-28 sm:h-36 sm:w-36"
+      />
+      <p className="loader-sub mt-6 font-mono text-[0.6875rem] uppercase tracking-[0.28em] text-[var(--lg-text-60)]">
         by MediXO
       </p>
     </div>

@@ -3,7 +3,7 @@ import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
 
 const STEPS = ['Learn', 'Practise', 'Diagnose', 'Remediate']
-const R = 126
+const R = 104
 const CX = 200
 const CY = 200
 const CIRC = 2 * Math.PI * R
@@ -78,26 +78,26 @@ export function Loop({ reduced }) {
     <section
       ref={rootRef}
       id="loop"
-      className="bg-cinema-ink px-5 py-24 text-cinema-paper sm:px-8 sm:py-32"
+      className="bg-[var(--lg-surface)] px-5 py-24 text-[var(--lg-text)] sm:px-8 sm:py-32"
       aria-label="The loop — learn, practise, diagnose, remediate"
     >
       <div className="mx-auto grid max-w-6xl items-center gap-14 lg:grid-cols-[1fr_1.1fr]">
         <div>
-          <p className="section-eyebrow text-cinema-paper/50">03 — Loop</p>
-          <h2 className="mt-4 font-display text-[clamp(2rem,4.6vw,3.6rem)] font-[480] leading-[0.98] tracking-tight text-cinema-paper">
+          <p className="section-eyebrow text-[var(--lg-text-50)]">03 — Loop</p>
+          <h2 className="mt-4 font-display text-[clamp(2rem,4.6vw,3.6rem)] font-[480] leading-[0.98] tracking-tight text-[var(--lg-text)]">
             A closed loop,
             <br />
             <em className="font-[430] italic">deliberately.</em>
           </h2>
-          <p className="mt-6 max-w-[44ch] text-base leading-relaxed text-cinema-paper/72">
+          <p className="mt-6 max-w-[44ch] text-base leading-relaxed text-[var(--lg-text-72)]">
             Nothing is practised once and abandoned. Every sitting feeds the next:
             what was learned is attempted, what was attempted is diagnosed, and
             what was missed is rebuilt — and the loop closes on itself again.
           </p>
-          <ol className="mt-10 space-y-3 font-mono text-[0.6875rem] uppercase tracking-widest text-cinema-paper/55">
+          <ol className="mt-10 space-y-3 font-mono text-[0.6875rem] uppercase tracking-widest text-[var(--lg-text-55)]">
             {STEPS.map((step, i) => (
               <li key={step} className="flex items-center gap-3">
-                <span className="text-cinema-paper/35">0{i + 1}</span>
+                <span className="text-[var(--lg-text-40)]">0{i + 1}</span>
                 <span>{step}</span>
               </li>
             ))}
@@ -106,14 +106,14 @@ export function Loop({ reduced }) {
 
         <figure className="relative mx-auto w-full max-w-[30rem]">
           <svg viewBox="0 0 400 400" role="img" aria-label="Ring of four stages: Learn, Practise, Diagnose, Remediate" className="w-full">
-            <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--color-hairline-on-ink)" strokeWidth="1" strokeDasharray="2 6" />
+            <circle cx={CX} cy={CY} r={R} fill="none" stroke="var(--lg-hairline)" strokeWidth="1" strokeDasharray="2 6" />
             <circle
               ref={pathRef}
               cx={CX}
               cy={CY}
               r={R}
               fill="none"
-              stroke="rgb(var(--vyuh-cinema-paper-rgb) / 0.85)"
+              stroke="var(--lg-text-85)"
               strokeWidth="1.5"
               strokeDasharray={CIRC}
               strokeDashoffset={CIRC}
@@ -122,15 +122,15 @@ export function Loop({ reduced }) {
             <g ref={ringRef}>
               {nodes.map((node) => (
                 <g key={node.label} ref={(el) => { nodeRefs.current[node.index] = el }} className="loop-node">
-                  <circle cx={node.x} cy={node.y} r="15" className="loop-node-disc" fill="var(--color-cinema-ink)" stroke="var(--color-hairline-on-ink-strong)" strokeWidth="1" />
-                  <circle cx={node.x} cy={node.y} r="4" className="loop-node-dot" fill="rgb(var(--vyuh-cinema-paper-rgb) / 0.4)" />
+                  <circle cx={node.x} cy={node.y} r="15" className="loop-node-disc" fill="var(--lg-surface)" stroke="var(--lg-hairline-strong)" strokeWidth="1" />
+                  <circle cx={node.x} cy={node.y} r="4" className="loop-node-dot" fill="var(--lg-text-40)" />
                   <text
                     ref={(el) => { labelRefs.current[node.index] = el }}
                     x={node.x + node.dx}
                     y={node.y + node.dy}
                     textAnchor={node.anchor}
                     className="loop-label"
-                    fill="rgb(var(--vyuh-cinema-paper-rgb) / 0.66)"
+                    fill="var(--lg-text-62)"
                     style={{ transformBox: 'fill-box', transformOrigin: '50% 50%' }}
                   >
                     {node.label}
@@ -140,8 +140,8 @@ export function Loop({ reduced }) {
             </g>
           </svg>
           <div aria-hidden="true" className="pointer-events-none absolute inset-0 flex flex-col items-center justify-center">
-            <span className="font-mono text-[0.5625rem] uppercase tracking-widest text-cinema-paper/45">Active step</span>
-            <span ref={centreRef} className="mt-2 font-display text-3xl font-[480] tracking-tight text-cinema-paper sm:text-4xl">
+            <span className="font-mono text-[0.5625rem] uppercase tracking-widest text-[var(--lg-text-45)]">Active step</span>
+            <span ref={centreRef} className="mt-2 font-display text-3xl font-[480] tracking-tight text-[var(--lg-text)] sm:text-4xl">
               Learn
             </span>
           </div>
@@ -150,7 +150,7 @@ export function Loop({ reduced }) {
 
       <style>{`
         .loop-node-active .loop-node-disc { fill: var(--color-ember); stroke: var(--color-ember); }
-        .loop-node-active .loop-node-dot { fill: rgb(var(--vyuh-cinema-ink-rgb)); }
+        .loop-node-active .loop-node-dot { fill: var(--color-on-ember, var(--color-ink)); }
       `}</style>
     </section>
   )

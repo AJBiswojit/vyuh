@@ -20,17 +20,22 @@ export function Statement({ reduced }) {
     if (reduced) return undefined
     gsap.registerPlugin(ScrollTrigger)
     const ctx = gsap.context(() => {
-      gsap.to('.statement-word', {
-        color: 'rgb(var(--vyuh-cinema-ink-rgb))',
-        ease: 'none',
-        stagger: 0.055,
-        scrollTrigger: {
-          trigger: rootRef.current,
-          start: 'top 72%',
-          end: 'bottom 58%',
-          scrub: 0.8,
+      // Words ink-in via opacity (theme-agnostic — inherits --lg-text).
+      gsap.fromTo(
+        '.statement-word',
+        { opacity: 0.24 },
+        {
+          opacity: 1,
+          ease: 'none',
+          stagger: 0.055,
+          scrollTrigger: {
+            trigger: rootRef.current,
+            start: 'top 72%',
+            end: 'bottom 58%',
+            scrub: 0.8,
+          },
         },
-      })
+      )
       gsap.fromTo(
         '.statement-mark',
         { scaleX: 0 },
@@ -49,11 +54,11 @@ export function Statement({ reduced }) {
     <section
       ref={rootRef}
       id="idea"
-      className="bg-cinema-paper px-5 py-28 text-cinema-ink sm:px-8 sm:py-36"
+      className="bg-[var(--lg-surface)] px-5 py-28 text-[var(--lg-text)] sm:px-8 sm:py-36"
       aria-label="The idea behind Vyuh"
     >
       <div className="mx-auto max-w-6xl">
-        <p className="section-eyebrow text-cinema-grey">01 — Idea</p>
+        <p className="section-eyebrow text-[var(--lg-text-60)]">01 — Idea</p>
         <p className="mt-10 max-w-5xl font-display text-[clamp(1.9rem,4.6vw,3.9rem)] font-[430] leading-[1.12] tracking-tight">
           {LINE.map((sentence, si) => (
             <span key={si} className="statement-sentence">
@@ -61,7 +66,7 @@ export function Statement({ reduced }) {
                 <span
                   key={`${si}-${i++}`}
                   className="statement-word"
-                  style={reduced ? { color: 'rgb(var(--vyuh-cinema-ink-rgb))' } : undefined}
+                  style={reduced ? undefined : undefined}
                 >
                   {word}{' '}
                 </span>
@@ -73,10 +78,10 @@ export function Statement({ reduced }) {
         <div className="mt-14 flex items-center gap-4">
           <span
             aria-hidden="true"
-            className="statement-mark block h-px w-40 origin-left bg-cinema-ink"
+            className="statement-mark block h-px w-40 origin-left bg-[var(--lg-text)]"
             style={reduced ? undefined : { transform: 'scaleX(0)' }}
           />
-          <span className="font-mono text-[0.625rem] uppercase tracking-widest text-cinema-grey">
+          <span className="font-mono text-[0.625rem] uppercase tracking-widest text-[var(--lg-text-60)]">
             The arrangement, not the effort
           </span>
         </div>

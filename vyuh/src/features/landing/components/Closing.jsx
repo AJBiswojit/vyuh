@@ -1,12 +1,13 @@
 import { useEffect, useRef } from 'react'
 import gsap from 'gsap'
 import { ScrollTrigger } from 'gsap/ScrollTrigger'
+import { ClosingLattice } from './ClosingLattice.jsx'
 
 /**
  * The coda — closing paper panel, no CTA. The shared canvas dissolves the
  * lattice into ink-on-paper particles over this panel as it scrubs in.
  */
-export function Closing({ motion, reduced }) {
+export function Closing({ motion, reduced, isMobile, resolvedTheme }) {
   const sectionRef = useRef(null)
 
   useEffect(() => {
@@ -43,11 +44,12 @@ export function Closing({ motion, reduced }) {
       ref={sectionRef}
       data-lattice-gate="closing"
       aria-label="Formation, precisely"
-      className="relative flex min-h-[88svh] flex-col items-center justify-center overflow-hidden bg-cinema-paper px-5 py-28 text-center text-cinema-ink"
+      className="relative flex min-h-[88svh] flex-col items-center justify-center overflow-hidden bg-[var(--lg-surface)] px-5 py-28 text-center text-[var(--lg-text)]"
     >
-      <p className="section-eyebrow justify-center text-cinema-grey">Coda</p>
+      <ClosingLattice motion={motion} reduced={reduced} isMobile={isMobile} resolvedTheme={resolvedTheme} />
+      <p className="section-eyebrow relative z-[2] justify-center text-[var(--lg-text-60)]">Coda</p>
       <h2
-        className="mt-6 font-display font-[500] text-cinema-ink"
+        className="relative z-[2] mt-6 font-display font-[500] text-[var(--lg-text)]"
         style={{
           fontSize: 'clamp(3rem, 10.5vw, 9rem)',
           lineHeight: 0.94,
@@ -63,11 +65,11 @@ export function Closing({ motion, reduced }) {
         </span>
         <span className="line-mask">
           <span className="closing-line line-inner">
-            <em className="font-[430] italic">precisely.</em>
+            <em className="font-[430] italic text-[var(--color-ember)]">precisely.</em>
           </span>
         </span>
       </h2>
-      <p className="mt-8 font-mono text-[0.625rem] uppercase tracking-widest text-cinema-grey">
+      <p className="relative z-[2] mt-8 font-mono text-[0.625rem] uppercase tracking-widest text-[var(--lg-text-60)]">
         Arrange · Attempt · Understand · Rebuild
       </p>
     </section>

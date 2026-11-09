@@ -58,12 +58,12 @@ export function Principles({ reduced }) {
     <section
       ref={rootRef}
       id="principles"
-      className="relative bg-cinema-paper px-5 pb-24 pt-24 text-cinema-ink sm:px-8 sm:pt-32"
+      className="relative bg-[var(--lg-surface)] px-5 pb-24 pt-24 text-[var(--lg-text)] sm:px-8 sm:pt-32"
       aria-label="Principles"
     >
       <div className="mx-auto max-w-6xl">
-        <p className="section-eyebrow text-cinema-grey">04 — Principles</p>
-        <h2 className="mt-4 max-w-3xl font-display text-[clamp(2rem,4.6vw,3.6rem)] font-[480] leading-[0.98] tracking-tight text-cinema-ink">
+        <p className="section-eyebrow text-[var(--lg-text-60)]">04 — Principles</p>
+        <h2 className="mt-4 max-w-3xl font-display text-[clamp(2rem,4.6vw,3.6rem)] font-[480] leading-[0.98] tracking-tight text-[var(--lg-text)]">
           Held quietly,
           <br />
           in every sitting.
@@ -72,20 +72,20 @@ export function Principles({ reduced }) {
           {PRINCIPLES.map((principle, i) => (
             <article
               key={principle.index}
-              className="principle-card sticky origin-top rounded-sm border border-hairline-on-paper bg-cinema-paper p-6 shadow-[0_-1px_0_0_rgb(var(--vyuh-cinema-ink-rgb)/0.06)] sm:p-10"
+              className="principle-card sticky origin-top rounded-sm border border-[var(--lg-hairline)] bg-[var(--lg-panel-raised)] p-6 shadow-[0_24px_50px_-30px_rgb(0_0_0/0.35)] sm:p-10"
               style={{ top: `${6 + i * 1.75}rem`, zIndex: i + 1 }}
             >
-              <div className="flex items-baseline justify-between gap-6 border-b border-hairline-on-paper pb-5">
-                <h3 className="font-display text-[clamp(1.7rem,3.4vw,2.9rem)] font-[480] leading-none tracking-tight text-cinema-ink">
+              <div className="flex items-baseline justify-between gap-6 border-b border-[var(--lg-hairline)] pb-5">
+                <h3 className="font-display text-[clamp(1.7rem,3.4vw,2.9rem)] font-[480] leading-none tracking-tight text-[var(--lg-text)]">
                   {principle.title}
                 </h3>
-                <span className="font-mono text-[0.625rem] uppercase tracking-widest text-cinema-grey">
+                <span className="font-mono text-[0.625rem] uppercase tracking-widest text-[var(--lg-text-60)]">
                   Principle {principle.index}
                 </span>
               </div>
               <div className="mt-6 grid gap-6 md:grid-cols-[1.6fr_1fr] md:items-end">
-                <p className="max-w-[46ch] text-base leading-relaxed text-cinema-ink/85">{principle.body}</p>
-                <p className="font-mono text-[0.625rem] leading-relaxed tracking-widest text-cinema-grey md:text-right">
+                <p className="max-w-[46ch] text-base leading-relaxed text-[var(--lg-text-85)]">{principle.body}</p>
+                <p className="font-mono text-[0.625rem] leading-relaxed tracking-widest text-[var(--lg-text-60)] md:text-right">
                   {principle.foot}
                 </p>
               </div>
