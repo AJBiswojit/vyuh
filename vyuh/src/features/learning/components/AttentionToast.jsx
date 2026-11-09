@@ -26,7 +26,7 @@ export function AttentionToast({ challenge, onRespond, busy }) {
       initial={reduced ? { opacity: 0 } : { opacity: 0, y: 32 }}
       animate={{ opacity: 1, y: 0 }}
       transition={{ duration: durations.standard, ease: easeEntrance }}
-      className="fixed inset-x-4 bottom-4 z-40 mx-auto flex max-w-md items-center gap-4 rounded-md border border-info bg-surface-raised p-4 shadow-[var(--shadow-overlay)]"
+      className="fixed inset-x-4 bottom-4 z-[60] mx-auto flex max-w-md items-center gap-4 rounded-md border border-info bg-surface-raised p-4 shadow-[var(--shadow-overlay)]"
       data-testid="attention-check"
     >
       <svg width="48" height="48" viewBox="0 0 48 48" aria-hidden="true" className="-rotate-90 shrink-0">

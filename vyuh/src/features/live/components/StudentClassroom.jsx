@@ -1,155 +1,161 @@
 import { useState } from 'react'
+import { ArrowLeft, LogOut } from 'lucide-react'
 import { Link } from 'react-router-dom'
-import { BookOpen, Hand, PlayCircle, Radio, Users } from 'lucide-react'
-import { Badge, EmptyState, ErrorState, Skeleton } from '@/shared/ui'
-import { useLiveClassroom } from '@/features/learning/hooks/useLiveClassroom.js'
-import { BroadcastPreview } from './BroadcastPreview.jsx'
-import { ClassroomShell } from './ClassroomShell.jsx'
-import { EngagementPanel } from './EngagementPanel.jsx'
-import { SessionSummary } from './SessionSummary.jsx'
-import { Whiteboard } from './Whiteboard.jsx'
+import { Badge, Button, Dialog, Skeleton, ErrorState } from '@/shared/ui'
+import { ClassroomStage } from './ClassroomStage.jsx'
+import { ClassroomInteractionPanel } from './ClassroomInteractionPanel.jsx'
+import { CompactAttendance } from './CompactAttendance.jsx'
+import { PollsPanel, ResourcesPanel } from './EngagementPanels.jsx'
 
 const SELF_ID = 'current-student'
 
 /**
- * The complete, independent light Student Classroom at
- * /student/live/:sessionId. It works with or without the Faculty Mirror,
- * requires the real Student identity through the shared service gate, and reads
- * the same shared classroom state as the Studio.
+ * The student live classroom at /student/live/:sessionId.
  *
- * The existing live-room stage, attendance strip, live rail, attention toast
- * and recording links remain in LiveRoomPage above this section; this pane adds
- * the synchronized broadcast stage, polls, resources, participants and hand.
+ * One job: let a student watch the class, join the conversation and leave —
+ * without managing anything. Three areas only:
+ *   1. A compact header — title, faculty, subject and batch, live status,
+ *      Leave class.
+ *   2. The teaching stage — faculty-synced scene (or the sample clip when the
+ *      shared classroom is unavailable) with fullscreen and bottom controls
+ *      (simulated microphone / camera / hand raise, fullscreen, leave).
+ *   3. The conversation panel — Chat and Questions tabs, with polls and
+ *      resources one tap away in side panels.
  *
- * @param {{ sessionId: string, session: any, attendanceState: any, replayHref: string|null }} props
+ * @param {{ session: any, attendanceState: any, classroom: any, onLeave: () => void, leaving: boolean, broadcast: boolean }} props
  */
-export function StudentClassroom({ sessionId, session, attendanceState, replayHref }) {
-  const classroom = useLiveClassroom(sessionId, attendanceState)
-  const [activeTab, setActiveTab] = useState('chat')
+export function StudentClassroom({ session, attendanceState, classroom, onLeave, leaving, broadcast }) {
+  const [leaveDialogOpen, setLeaveDialogOpen] = useState(false)
+
+  const incompatible = classroom.compatible === false || !classroom.snapshot
+  const { snapshot, view, send } = classroom
+  const self = snapshot?.participants.find((person) => person.id === SELF_ID) ?? null
+  const joined = Boolean(self && self.state !== 'left')
+  const handState = !snapshot ? null : self?.handRaised ? 'raised' : 'lowered'
+
+  /**
+   * Sends a participation event. Joining is implicit in participating: a
+   * student never has to press "Join" before they can speak — the first
+   * action records one join event, then does its own.
+   * @param {string} type @param {Object} [payload]
+   */
+  function participate(type, payload = {}) {
+    if (type !== 'participant_joined' && type !== 'participant_left' && !joined) {
+      send('participant_joined', { participantId: SELF_ID, name: 'You' })
+    }
+    send(type, payload)
+  }
+
+  function toggleHand() {
+    if (!snapshot) return
+    participate(self?.handRaised ? 'hand_lowered' : 'hand_raised', { participantId: SELF_ID })
+  }
+
+  function confirmLeave() {
+    if (joined) send('participant_left', { participantId: SELF_ID })
+    setLeaveDialogOpen(false)
+    onLeave()
+  }
 
   if (classroom.isPending) {
     return (
-      <Skeleton.Region label="Loading Student Classroom">
-        <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-          <Skeleton.Block className="h-72" />
-          <Skeleton.Block className="h-72" />
+      <Skeleton.Region label="Loading live class">
+        <div className="grid gap-4 xl:grid-cols-[minmax(0,1fr)_22rem]">
+          <Skeleton.Block className="aspect-video" />
+          <Skeleton.Block className="h-96" />
         </div>
       </Skeleton.Region>
     )
   }
+
   if (classroom.isError) {
     return (
       <ErrorState
         size="panel"
         code="E_CLASSROOM"
-        title="The shared classroom could not open"
+        title="The classroom could not open"
         description={classroom.error?.message ?? 'The shared classroom state is unavailable.'}
         action={<button type="button" onClick={() => { classroom.retrySubscription?.(); classroom.refetch() }} className="inline-flex min-h-11 items-center rounded-sm border border-line-strong px-4 text-xs font-[560] text-heading">Retry classroom</button>}
       />
     )
   }
-  if (!classroom.compatible || !classroom.snapshot) {
-    return (
-      <EmptyState
-        size="panel"
-        title="Shared Studio classroom is unavailable"
-        description={classroom.reason ?? 'Only the shared demo session supports classroom synchronization. The live-room tools above are unchanged.'}
-      />
-    )
-  }
 
-  const { snapshot, view, metadata, send, summary } = classroom
-  const self = snapshot.participants.find((person) => person.id === SELF_ID)
-  const joined = Boolean(self && self.state !== 'left')
-  const prototypeNotice = view.prototypeNotice
+  const broadcastStage = broadcast || session?.mode === 'broadcast'
 
   return (
-    <ClassroomShell
-      title={snapshot.setup.title}
-      subtitle={`${metadata?.facultyName ?? session?.facultyName ?? 'Faculty'} · ${snapshot.setup.batchName} · ${snapshot.setup.subjectName}`}
-      status={snapshot.status}
-      badge={view.activeSceneLabel}
-      notice={prototypeNotice}
-    >
-      <p role="status" aria-live="polite" className="flex items-center gap-2 text-2xs leading-relaxed text-muted">
-        <Radio className="size-3.5 shrink-0" strokeWidth={1.5} aria-hidden="true" />
-        Faculty scene: {view.activeSceneLabel}. Shared state revision {snapshot.revision}. This is a simulated broadcast, not a live stream.
-      </p>
-
-      <div className="grid gap-4 xl:grid-cols-[minmax(0,1.6fr)_minmax(0,1fr)]">
-        <div className="flex min-w-0 flex-col gap-4">
-          <BroadcastPreview
-            scene={snapshot.activeScene}
-            sceneLabel={view.activeSceneLabel}
-            setup={snapshot.setup}
-            slide={view.slide}
-            slideIndex={snapshot.toolbox.slideIndex}
-            slideCount={snapshot.slides.length}
-            media={snapshot.media}
-            metadata={metadata}
-            participants={snapshot.participants}
-          >
-            <Whiteboard shapes={snapshot.whiteboard.shapes} tool={snapshot.whiteboard.tool} readOnly />
-          </BroadcastPreview>
-
-          <div className="overflow-hidden rounded-sm border border-line bg-surface-raised">
-            <EngagementPanel
-              snapshot={snapshot}
-              view={view}
-              send={send}
-              role="student"
-              activeTab={activeTab}
-              onTabChange={setActiveTab}
-              metadata={metadata}
-              questions={view.visibleQuestions}
-            />
-          </div>
+    <div data-testid="student-classroom" className="flex min-w-0 flex-col gap-3">
+      {/* ── 1. Compact classroom header ─────────────────────────── */}
+      <header className="flex flex-wrap items-start justify-between gap-3 border-b border-line pb-3">
+        <div className="min-w-0">
+          <p className="rule-label">Live class</p>
+          <h1 className="mt-1 text-lg leading-[1.15] tracking-tighter text-heading sm:text-xl">{session.title}</h1>
+          <p className="mt-1.5 flex flex-wrap items-center gap-x-3 gap-y-1 text-2xs text-muted">
+            <span>{session.facultyName}</span>
+            <span aria-hidden="true">·</span>
+            <span>{session.subjectName}</span>
+            <span aria-hidden="true">·</span>
+            <span>{session.batchName}</span>
+          </p>
         </div>
+        <div className="flex shrink-0 flex-wrap items-center gap-2">
+          <Badge tone="answer" variant="soft">
+            <span className="live-dot mr-1 inline-block size-1.5 rounded-full bg-answer align-middle" aria-hidden="true" />
+            Live now
+          </Badge>
+          <Button variant="danger" size="sm" icon={<LogOut strokeWidth={1.5} />} onClick={() => setLeaveDialogOpen(true)}>Leave class</Button>
+        </div>
+      </header>
 
-        <aside className="flex min-w-0 flex-col gap-4" aria-label="Classroom participation and session information">
-          {/* R18: this is the ONE accessible participation-control group. A
-              named region lets tests and assistive technology target it. */}
-          <section aria-labelledby="student-participation-heading" className="rounded-sm border border-line bg-surface-raised p-3">
-            <p className="rule-label">Your participation</p>
-            <h3 id="student-participation-heading" className="mt-1 flex items-center gap-2 text-sm font-[560] tracking-tight text-heading"><Hand className="size-4" strokeWidth={1.5} aria-hidden="true" /> Shared classroom</h3>
-            <p className="mt-1 text-2xs leading-relaxed text-muted">Join, raise your hand or leave the shared prototype classroom. Each action is a recorded mock event.</p>
-            <div role="group" aria-label="Shared classroom participation controls" className="mt-3 flex flex-wrap gap-2">
-              <button type="button" disabled={joined} onClick={() => send('participant_joined', { participantId: SELF_ID, name: 'You' })} className="min-h-[var(--spacing-touch)] rounded-sm border border-heading bg-heading px-3 text-xs font-[560] text-on-inverse disabled:cursor-not-allowed disabled:border-line disabled:bg-surface-sunken disabled:text-faint">Join shared classroom</button>
-              <button type="button" disabled={!joined} onClick={() => send('participant_left', { participantId: SELF_ID })} className="min-h-[var(--spacing-touch)] rounded-sm border border-line-strong px-3 text-xs font-[560] text-heading disabled:cursor-not-allowed disabled:text-faint">Leave shared classroom</button>
-              <button type="button" disabled={!joined} onClick={() => send(self?.handRaised ? 'hand_lowered' : 'hand_raised', { participantId: SELF_ID })} className="min-h-[var(--spacing-touch)] rounded-sm border border-line-strong px-3 text-xs font-[560] text-heading disabled:cursor-not-allowed disabled:text-faint">{self?.handRaised ? 'Lower hand' : 'Raise hand'}</button>
-            </div>
-            <p className="mt-2 font-mono text-2xs tabular-nums text-muted">{joined ? (self.handRaised ? 'Joined · hand raised' : 'Joined · hand lowered') : 'Not joined to the shared classroom'}</p>
-          </section>
+      {/* ── Compact automatic attendance ────────────────────────── */}
+      <CompactAttendance attendance={attendanceState} />
 
-          <section className="rounded-sm border border-line bg-surface-raised p-3">
-            <p className="rule-label">Session state</p>
-            <dl className="mt-2 flex flex-col gap-2 text-2xs">
-              <div className="flex items-center justify-between gap-2"><dt className="text-muted">Broadcast scene</dt><dd className="font-[560] text-heading">{view.activeSceneLabel}</dd></div>
-              <div className="flex items-center justify-between gap-2"><dt className="text-muted">Class status</dt><dd className="font-[560] text-heading">{snapshot.status === 'live' ? 'Live (demo)' : snapshot.status === 'ended' ? 'Ended (demo)' : 'Not started (demo)'}</dd></div>
-              <div className="flex items-center justify-between gap-2"><dt className="text-muted">Catalogue state</dt><dd className="font-[560] text-heading">{snapshot.setup.catalogueStatus} (seeded)</dd></div>
-              <div className="flex items-center justify-between gap-2"><dt className="text-muted">Whiteboard actions</dt><dd className="font-[560] text-heading">{snapshot.whiteboard.shapes.length} recorded</dd></div>
-            </dl>
-            <div className="mt-3 flex flex-wrap gap-2">
-              <Badge tone="review" variant="soft"><Users className="size-3" aria-hidden="true" /> {snapshot.participants.length} labelled roster rows</Badge>
-              <Badge tone="info" variant="soft"><BookOpen className="size-3" aria-hidden="true" /> {snapshot.resources.length} resources</Badge>
-            </div>
-          </section>
-
-          <section className="rounded-sm border border-line bg-surface-raised p-3">
-            <p className="rule-label">Recording and replay</p>
-            <h3 className="mt-1 flex items-center gap-2 text-sm font-[560] tracking-tight text-heading"><PlayCircle className="size-4" strokeWidth={1.5} aria-hidden="true" /> Library links</h3>
-            {replayHref ? (
-              <Link to={replayHref} className="mt-3 inline-flex min-h-[var(--spacing-touch)] items-center gap-2 rounded-sm border border-line-strong px-3 text-xs font-[560] text-heading hover:border-heading">Watch this session recording</Link>
-            ) : (
-              <p className="mt-2 text-2xs leading-relaxed text-muted">A recording for this session has not been published to the library yet.</p>
-            )}
-            <Link to="/student/recordings" className="mt-2 block text-2xs text-heading underline">Open the recording library</Link>
-            <p className="mt-2 text-2xs leading-relaxed text-muted">Recordings are existing mock library items. The Studio recording control is a simulated preference only.</p>
-          </section>
-        </aside>
+      {/* ── 2 + 3. Teaching stage and conversation panel ─────────── */}
+      <div className="grid grid-cols-1 gap-3 xl:grid-cols-[minmax(0,1fr)_22rem]">
+        <ClassroomStage
+          classTitle={session.title}
+          broadcast={Boolean(broadcastStage)}
+          studioAvailable={!incompatible}
+          snapshot={snapshot}
+          view={view}
+          metadata={classroom.metadata}
+          session={session}
+          handState={incompatible ? null : handState}
+          onToggleHand={toggleHand}
+          onLeave={() => setLeaveDialogOpen(true)}
+          leaving={leaving}
+        />
+        <ClassroomInteractionPanel
+          snapshot={snapshot}
+          view={view}
+          studioAvailable={!incompatible}
+          participate={participate}
+          pollsPanel={snapshot ? <PollsPanel snapshot={snapshot} send={participate} role="student" metadata={classroom.metadata} /> : null}
+          resourcesPanel={snapshot ? <ResourcesPanel snapshot={snapshot} view={view} send={participate} role="student" /> : null}
+        />
       </div>
 
-      <SessionSummary summary={summary} snapshot={snapshot} metadata={metadata} />
-    </ClassroomShell>
+      {/* Honest provenance, one quiet line — no dashboard furniture. */}
+      <p className="text-2xs leading-relaxed text-muted">{view?.prototypeNotice ?? 'Prototype session data — simulated events and labelled demo seeds.'}</p>
+
+      {/* Back to the schedule stays available, but leave is the primary exit. */}
+      <Link to="/student/live" className="inline-flex w-fit items-center gap-1.5 text-2xs text-muted hover:text-heading">
+        <ArrowLeft className="size-3.5" strokeWidth={1.5} aria-hidden="true" />
+        Back to class schedule
+      </Link>
+
+      <Dialog
+        open={leaveDialogOpen}
+        onClose={() => setLeaveDialogOpen(false)}
+        title="Leave this class?"
+        description="Attendance already marked stays recorded. You can rejoin while the class is live."
+        confirmLabel="Leave class"
+        cancelLabel="Keep watching"
+        tone="danger"
+        busy={leaving}
+        onConfirm={confirmLeave}
+      >
+        <p className="text-xs leading-relaxed text-body">Your microphone, camera and hand controls are simulated in this demo. Leaving records a stop event for this class and returns you to the schedule.</p>
+      </Dialog>
+    </div>
   )
 }

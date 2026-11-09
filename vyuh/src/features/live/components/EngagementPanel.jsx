@@ -27,8 +27,8 @@ export function EngagementPanel({ snapshot, view, send, role, activeTab, onTabCh
 
   return (
     <Tabs value={activeTab} onValueChange={onTabChange} className="flex min-h-0 flex-col">
-      {/* R14: the legacy LiveRail already has a "Chat" tab on the Student page.
-          Give this rail its own unambiguous name in both roles. */}
+      {/* The student classroom surfaces its own Chat/Questions tabs; this rail
+          keeps unambiguous tab names in both roles. */}
       <TabList aria-label={faculty ? 'Studio engagement' : 'Shared classroom engagement'} className="shrink-0">
         <Tab value="chat" count={lines.length}>{faculty ? 'Studio chat' : 'Shared chat'}</Tab>
         <Tab value="questions" count={questionList.length}>Q&amp;A</Tab>

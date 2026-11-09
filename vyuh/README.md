@@ -118,7 +118,10 @@ attempt. Browser demo flags: `vyuh.mock.analysisLocked=true`,
 To try the learning module: sign in as the student and use **Live classes**,
 **Recordings**, **Attendance**, **Doubts**, or **Study rooms** in the sidebar.
 Two live rooms are seeded — *Rotational Dynamics* (Interactive) and *Chemical
-Kinetics* (Broadcast). The dashboard Continue watching card and the recording
+Kinetics* (Broadcast). The student live class keeps three areas only: a compact
+header, the teaching stage (fullscreen with Escape support, simulated mic/camera/hand
+controls) and one conversation panel (Chat and Questions tabs, unread counts, polls
+and resources in side panels). The dashboard Continue watching card and the recording
 library open the player; doubts link back to the exact timestamp. Attention checks
 fire every 8–15 minutes by default; set `vyuh.mock.attentionMinSeconds=3` and
 `vyuh.mock.attentionMaxSeconds=5` in `localStorage` to see one within seconds.
