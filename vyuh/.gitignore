@@ -27,3 +27,5 @@ dist-ssr
 .arena/
 playwright-report/
 test-results/
+artifacts/
+*.tmp.mjs
