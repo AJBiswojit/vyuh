@@ -2,8 +2,8 @@ import { AnimatePresence, motion } from 'framer-motion'
 import { cn } from '@/shared/lib/cn.js'
 import { usePrefersReducedMotion } from '@/shared/hooks/usePrefersReducedMotion.js'
 
-/** @param {{ remaining: number, source?: 'worker'|'fallback' }} props */
-export function ExamTimer({ remaining, source = 'worker' }) {
+/** @param {{ remaining: number, source?: 'worker'|'fallback', className?: string }} props */
+export function ExamTimer({ remaining, source = 'worker', className }) {
   const reduced = usePrefersReducedMotion()
   const total = Math.max(0, remaining)
   const hours = Math.floor(total / 3600)
@@ -21,7 +21,7 @@ export function ExamTimer({ remaining, source = 'worker' }) {
       data-timer-source={source}
       animate={!reduced && tone === 'review' ? { opacity: [1, 0.82, 1] } : { opacity: 1 }}
       transition={tone === 'review' && !reduced ? { duration: 2.4, repeat: Infinity, ease: 'easeInOut' } : { duration: 0.175 }}
-      className={cn('inline-flex items-center gap-0.5 rounded-sm px-3 py-2 font-mono text-lg font-[560] tabular-nums', tone === 'danger' ? 'bg-danger text-on-signal-inverse' : tone === 'review' ? 'bg-review text-on-signal' : 'bg-heading text-on-inverse')}
+      className={cn('inline-flex items-center gap-0.5 rounded-sm px-2.5 py-1 font-mono text-lg font-[560] tabular-nums', tone === 'danger' ? 'bg-danger text-on-signal-inverse' : tone === 'review' ? 'bg-review text-on-signal' : 'bg-heading text-on-inverse', className)}
     >
       {text.split('').map((char, index) => char === ':' ? <span key={`colon-${index}`} className="px-0.5">:</span> : (
         <span key={index} className="relative inline-block h-[1.2em] w-[0.62em] overflow-hidden align-middle">
