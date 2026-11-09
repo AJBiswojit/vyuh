@@ -43,7 +43,7 @@ export function Closing({ motion, reduced, isMobile, resolvedTheme }) {
     <section
       ref={sectionRef}
       data-lattice-gate="closing"
-      aria-label="Formation, precisely"
+      aria-label="Learn, ascend"
       className="relative flex min-h-[88svh] flex-col items-center justify-center overflow-hidden bg-[var(--lg-surface)] px-5 py-28 text-center text-[var(--lg-text)]"
     >
       <ClosingLattice motion={motion} reduced={reduced} isMobile={isMobile} resolvedTheme={resolvedTheme} />
@@ -61,11 +61,11 @@ export function Closing({ motion, reduced, isMobile, resolvedTheme }) {
             do not also inline a translate here — GSAP parses a CSS transform into its
             own `y` component and the two would stack, leaving the line clipped forever. */}
         <span className="line-mask">
-          <span className="closing-line line-inner">Formation,</span>
+          <span className="closing-line line-inner">Learn,</span>
         </span>
         <span className="line-mask">
           <span className="closing-line line-inner">
-            <em className="font-[430] italic text-[var(--color-ember)]">precisely.</em>
+            <em className="font-[430] italic text-[var(--color-ember)]">ascend.</em>
           </span>
         </span>
       </h2>
